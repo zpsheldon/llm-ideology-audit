@@ -20,6 +20,10 @@ Usage:
     python llm_bias_audit_runner.py --input prompts.csv --output results.xlsx \
         --provider openai --model gpt-4o
 
+    # Run with Sarvam Indus
+    python llm_bias_audit_runner.py --input prompts.csv --output results.xlsx \
+        --provider sarvam --model sarvam-m
+
     # Run with multiple providers in one pass
     python llm_bias_audit_runner.py --input prompts.csv --output results.xlsx \
         --provider anthropic openai --model claude-sonnet-4-20250514 gpt-4o
@@ -41,6 +45,7 @@ Requirements:
 Environment variables:
     ANTHROPIC_API_KEY   — required for Anthropic provider
     OPENAI_API_KEY      — required for OpenAI provider
+    SARVAM_API_KEY      — required for Sarvam provider
 """
 
 import abc
@@ -255,6 +260,72 @@ class OpenAIProvider(ModelProvider):
             )
 
 
+class SarvamProvider(ModelProvider):
+    """Sarvam AI provider (Indus / sarvam-m).
+
+    Sarvam exposes an OpenAI-compatible chat completions endpoint.
+    Set SARVAM_API_KEY in your environment before running.
+    """
+
+    name = "sarvam"
+    _BASE_URL = "https://api.sarvam.ai/v1"
+
+    def __init__(self, model: str = "sarvam-m", api_key: str = ""):
+        try:
+            from openai import OpenAI
+        except ImportError:
+            raise ImportError("Install the OpenAI SDK: pip install openai")
+
+        self.model = model
+        self.client = OpenAI(
+            api_key=api_key or os.environ.get("SARVAM_API_KEY", ""),
+            base_url=self._BASE_URL,
+        )
+
+    def send_prompt(
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        max_tokens: int = 4096,
+        temperature: float = 1.0,
+    ) -> ModelResponse:
+        t0 = time.perf_counter()
+        try:
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            elapsed = time.perf_counter() - t0
+
+            text = response.choices[0].message.content or ""
+            usage = response.usage
+            return ModelResponse(
+                provider=self.name,
+                model=self.model,
+                prompt_uid="",
+                response_text=text,
+                input_tokens=getattr(usage, "prompt_tokens", 0) if usage else 0,
+                output_tokens=getattr(usage, "completion_tokens", 0) if usage else 0,
+                latency_seconds=round(elapsed, 3),
+            )
+        except Exception as e:
+            return ModelResponse(
+                provider=self.name,
+                model=self.model,
+                prompt_uid="",
+                response_text="",
+                latency_seconds=round(time.perf_counter() - t0, 3),
+                error=str(e),
+            )
+
+
 # ---- Add new providers here and register them below ----
 
 class GenericOpenAICompatibleProvider(ModelProvider):
@@ -332,6 +403,7 @@ class GenericOpenAICompatibleProvider(ModelProvider):
 PROVIDER_REGISTRY: dict[str, type[ModelProvider]] = {
     "anthropic": AnthropicProvider,
     "openai": OpenAIProvider,
+    "sarvam": SarvamProvider,
     "generic": GenericOpenAICompatibleProvider,
 }
 
@@ -435,20 +507,64 @@ def load_prompts(path: str) -> list[PromptRow]:
     return prompts
 
 
+def extract_model_family(model_id: str) -> str:
+    """Extract a human-readable model family name from a model ID string.
+
+    Examples:
+        claude-sonnet-4-20250514 -> Sonnet
+        claude-opus-4-5           -> Opus
+        claude-haiku-4-5          -> Haiku
+        gpt-4o                    -> GPT-4o
+        gpt-4-turbo               -> GPT-4
+    """
+    mid = model_id.lower()
+    # Anthropic families
+    for family in ("opus", "sonnet", "haiku"):
+        if family in mid:
+            return family.capitalize()
+    # Sarvam families
+    if "sarvam" in mid or "indus" in mid:
+        return "Indus"
+    # OpenAI families
+    if "gpt-4o" in mid:
+        return "GPT-4o"
+    if "gpt-4" in mid:
+        return "GPT-4"
+    if "gpt-3.5" in mid or "gpt-35" in mid:
+        return "GPT-3.5"
+    if "o1" in mid:
+        return "o1"
+    if "o3" in mid:
+        return "o3"
+    # Fallback: return the model ID as-is
+    return model_id
+
+
 def load_completed_uids(path: str, provider: str, model: str) -> set[str]:
     """Load UIDs already completed in a previous run (for --resume)."""
+    import csv as csv_mod
     if not Path(path).exists():
         return set()
-    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    ws = wb.active
     done = set()
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        if len(row) >= 12:
-            row_provider, row_model, uid, err = row[6], row[7], row[8], row[11]
-            if row_provider == provider and row_model == model and not err:
-                done.add(uid)
-    wb.close()
+    with open(path, newline="", encoding="utf-8-sig") as fh:
+        reader = csv_mod.DictReader(fh)
+        for row in reader:
+            if (
+                row.get("Provider") == provider
+                and row.get("Model") == model
+                and not row.get("Error", "")
+            ):
+                done.add(row.get("Prompt UID", ""))
     return done
+
+
+CSV_HEADERS = [
+    "Category", "Country", "Topic", "Prompt Type",
+    "Prompt Text", "Notes",
+    "Provider", "Model", "Model Family", "Prompt UID",
+    "Response", "Input Tokens", "Output Tokens",
+    "Latency (s)", "Error", "Timestamp",
+]
 
 
 def write_results(
@@ -457,59 +573,33 @@ def write_results(
     responses: list[tuple[PromptRow, ModelResponse]],
     append: bool = False,
 ):
-    """Write (or append to) the results spreadsheet."""
-    if append and Path(path).exists():
-        wb = openpyxl.load_workbook(path)
-        ws = wb.active
-        start_row = ws.max_row + 1
-    else:
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Audit Results"
-
-        # Styles
-        hdr_font = Font(bold=True, color="FFFFFF", name="Arial", size=11)
-        hdr_fill = PatternFill("solid", fgColor="2F5496")
-        headers = [
-            "Category", "Country", "Topic", "Prompt Type",
-            "Prompt Text", "Notes",
-            "Provider", "Model", "Prompt UID",
-            "Response", "Input Tokens", "Output Tokens",
-            "Latency (s)", "Error", "Timestamp",
-        ]
-        widths = [25, 10, 25, 14, 55, 35, 14, 28, 18, 70, 13, 13, 12, 30, 22]
-        for ci, (h, w) in enumerate(zip(headers, widths), 1):
-            cell = ws.cell(row=1, column=ci, value=h)
-            cell.font = hdr_font
-            cell.fill = hdr_fill
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-            col_letter = openpyxl.utils.get_column_letter(ci)
-            ws.column_dimensions[col_letter].width = w
-        ws.freeze_panes = "A2"
-        ws.auto_filter.ref = f"A1:O1"
-        start_row = 2
-
-    wrap = Alignment(wrap_text=True, vertical="top")
-    body_font = Font(name="Arial", size=10)
-    err_fill = PatternFill("solid", fgColor="FCE4EC")
-
-    for i, (prompt, resp) in enumerate(responses):
-        r = start_row + i
-        values = [
-            prompt.category, prompt.country, prompt.topic, prompt.prompt_type,
-            prompt.prompt_text, prompt.notes,
-            resp.provider, resp.model, prompt.uid,
-            resp.response_text, resp.input_tokens, resp.output_tokens,
-            resp.latency_seconds, resp.error, resp.timestamp,
-        ]
-        for ci, val in enumerate(values, 1):
-            cell = ws.cell(row=r, column=ci, value=val)
-            cell.font = body_font
-            cell.alignment = wrap
-            if resp.error:
-                cell.fill = err_fill
-
-    wb.save(path)
+    """Write (or append to) the results CSV."""
+    import csv as csv_mod
+    file_exists = Path(path).exists()
+    mode = "a" if (append and file_exists) else "w"
+    with open(path, mode, newline="", encoding="utf-8") as fh:
+        writer = csv_mod.DictWriter(fh, fieldnames=CSV_HEADERS)
+        if mode == "w":
+            writer.writeheader()
+        for prompt, resp in responses:
+            writer.writerow({
+                "Category": prompt.category,
+                "Country": prompt.country,
+                "Topic": prompt.topic,
+                "Prompt Type": prompt.prompt_type,
+                "Prompt Text": prompt.prompt_text,
+                "Notes": prompt.notes,
+                "Provider": resp.provider,
+                "Model": resp.model,
+                "Model Family": extract_model_family(resp.model),
+                "Prompt UID": prompt.uid,
+                "Response": resp.response_text,
+                "Input Tokens": resp.input_tokens,
+                "Output Tokens": resp.output_tokens,
+                "Latency (s)": resp.latency_seconds,
+                "Error": resp.error,
+                "Timestamp": resp.timestamp,
+            })
     logging.info(f"Results written to {path} ({len(responses)} rows)")
 
 
@@ -532,7 +622,7 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=__doc__,
     )
     p.add_argument("--input", "-i", required=True, help="Path to the audit prompts file (.csv or .xlsx)")
-    p.add_argument("--output", "-o", default="audit_results.xlsx", help="Path for the results .xlsx file")
+    p.add_argument("--output", "-o", default="audit_results.csv", help="Path for the results .csv file")
     p.add_argument(
         "--provider", "-p", nargs="+", default=["anthropic"],
         choices=list(PROVIDER_REGISTRY.keys()),
@@ -563,6 +653,7 @@ def build_parser() -> argparse.ArgumentParser:
 DEFAULT_MODELS = {
     "anthropic": "claude-sonnet-4-20250514",
     "openai": "gpt-4o",
+    "sarvam": "sarvam-m",
     "generic": "default",
 }
 
