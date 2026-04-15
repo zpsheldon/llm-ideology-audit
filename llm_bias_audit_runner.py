@@ -24,6 +24,10 @@ Usage:
     python llm_bias_audit_runner.py --input prompts.csv --output results.xlsx \
         --provider sarvam --model sarvam-m
 
+    # Run with Sarvam 30B
+    python llm_bias_audit_runner.py --input prompts.csv --output results.xlsx \
+        --provider sarvam --model sarvam-m-30b
+
     # Run with multiple providers in one pass
     python llm_bias_audit_runner.py --input prompts.csv --output results.xlsx \
         --provider anthropic openai --model claude-sonnet-4-20250514 gpt-4o
@@ -524,7 +528,11 @@ def extract_model_family(model_id: str) -> str:
             return family.capitalize()
     # Sarvam families
     if "sarvam" in mid or "indus" in mid:
-        return "Indus"
+        if "30b" in mid:
+            return "Sarvam-30B"
+        if "2b" in mid:
+            return "Sarvam-2B"
+        return "Sarvam-M"
     # OpenAI families
     if "gpt-4o" in mid:
         return "GPT-4o"
@@ -653,7 +661,7 @@ def build_parser() -> argparse.ArgumentParser:
 DEFAULT_MODELS = {
     "anthropic": "claude-sonnet-4-20250514",
     "openai": "gpt-4o",
-    "sarvam": "sarvam-m",
+    "sarvam": "sarvam-m-30b",
     "generic": "default",
 }
 
