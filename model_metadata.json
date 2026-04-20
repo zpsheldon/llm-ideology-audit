@@ -1,0 +1,124 @@
+{
+  "_comment": "Model registry for the LLM Ideology Audit leaderboard. Add new models here as you run them.",
+  "_schema": {
+    "model_id_pattern": "Regex or exact string matched against the 'Model' column in audit_results CSV files",
+    "display_name": "Human-readable name shown in the leaderboard",
+    "provider": "Company/organization that built the model",
+    "country_of_origin": "Country where the provider is headquartered",
+    "flag": "Emoji flag for the country"
+  },
+  "models": [
+    {
+      "model_id_pattern": "claude-opus",
+      "display_name": "Claude Opus",
+      "provider": "Anthropic",
+      "country_of_origin": "USA",
+      "flag": "🇺🇸",
+      "color": "#D97706"
+    },
+    {
+      "model_id_pattern": "claude-sonnet",
+      "display_name": "Claude Sonnet",
+      "provider": "Anthropic",
+      "country_of_origin": "USA",
+      "flag": "🇺🇸",
+      "color": "#B45309"
+    },
+    {
+      "model_id_pattern": "claude-haiku",
+      "display_name": "Claude Haiku",
+      "provider": "Anthropic",
+      "country_of_origin": "USA",
+      "flag": "🇺🇸",
+      "color": "#92400E"
+    },
+    {
+      "model_id_pattern": "gpt-4o",
+      "display_name": "GPT-4o",
+      "provider": "OpenAI",
+      "country_of_origin": "USA",
+      "flag": "🇺🇸",
+      "color": "#059669"
+    },
+    {
+      "model_id_pattern": "gpt-4",
+      "display_name": "GPT-4",
+      "provider": "OpenAI",
+      "country_of_origin": "USA",
+      "flag": "🇺🇸",
+      "color": "#047857"
+    },
+    {
+      "model_id_pattern": "gpt-3.5",
+      "display_name": "GPT-3.5",
+      "provider": "OpenAI",
+      "country_of_origin": "USA",
+      "flag": "🇺🇸",
+      "color": "#065F46"
+    },
+    {
+      "model_id_pattern": "sarvam-m-30b",
+      "display_name": "Sarvam 30B",
+      "provider": "Sarvam AI",
+      "country_of_origin": "India",
+      "flag": "🇮🇳",
+      "color": "#7C3AED"
+    },
+    {
+      "model_id_pattern": "sarvam-m-105b",
+      "display_name": "Sarvam 105B",
+      "provider": "Sarvam AI",
+      "country_of_origin": "India",
+      "flag": "🇮🇳",
+      "color": "#6D28D9"
+    },
+    {
+      "model_id_pattern": "sarvam-m",
+      "display_name": "Sarvam Indus",
+      "provider": "Sarvam AI",
+      "country_of_origin": "India",
+      "flag": "🇮🇳",
+      "color": "#5B21B6"
+    },
+    {
+      "model_id_pattern": "qwen",
+      "display_name": "Qwen",
+      "provider": "Alibaba Cloud",
+      "country_of_origin": "China",
+      "flag": "🇨🇳",
+      "color": "#DC2626"
+    },
+    {
+      "model_id_pattern": "deepseek",
+      "display_name": "DeepSeek",
+      "provider": "DeepSeek",
+      "country_of_origin": "China",
+      "flag": "🇨🇳",
+      "color": "#B91C1C"
+    },
+    {
+      "model_id_pattern": "mistral",
+      "display_name": "Mistral",
+      "provider": "Mistral AI",
+      "country_of_origin": "France",
+      "flag": "🇫🇷",
+      "color": "#2563EB"
+    },
+    {
+      "model_id_pattern": "llama",
+      "display_name": "Llama",
+      "provider": "Meta",
+      "country_of_origin": "USA",
+      "flag": "🇺🇸",
+      "color": "#1D4ED8"
+    },
+    {
+      "model_id_pattern": "gemini",
+      "display_name": "Gemini",
+      "provider": "Google",
+      "country_of_origin": "USA",
+      "flag": "🇺🇸",
+      "color": "#15803D"
+    }
+  ]
+}
