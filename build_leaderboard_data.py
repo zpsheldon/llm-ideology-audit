@@ -489,11 +489,19 @@ def main() -> None:
     # Auto-discover score files if not specified
     input_files = args.input
     if not input_files:
-        discovered = sorted(Path(".").glob("judge_scores_*.csv"))
+        # Look in judge_results/ first, then fall back to current directory
+        search_dirs = [Path("judge_results"), Path(".")]
+        discovered = []
+        for d in search_dirs:
+            discovered = sorted(d.glob("judge_scores_*.csv"))
+            if discovered:
+                logger.info(f"Auto-discovering score files from: {d}/")
+                break
         if not discovered:
             logger.error(
-                "No judge_scores_*.csv files found in the current directory. "
-                "Run llm_judge_runner.py first, or specify --input explicitly."
+                "No judge_scores_*.csv files found in judge_results/ or the "
+                "current directory. Run llm_judge_runner.py first, or specify "
+                "--input explicitly."
             )
             import sys; sys.exit(1)
         input_files = [str(p) for p in discovered]

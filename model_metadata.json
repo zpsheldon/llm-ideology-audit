@@ -97,6 +97,22 @@
       "color": "#B91C1C"
     },
     {
+      "model_id_pattern": "lechat-thinking",
+      "display_name": "Le Chat (Thinking)",
+      "provider": "Mistral AI",
+      "country_of_origin": "France",
+      "flag": "🇫🇷",
+      "color": "#1D4ED8"
+    },
+    {
+      "model_id_pattern": "lechat-standard",
+      "display_name": "Le Chat (Standard)",
+      "provider": "Mistral AI",
+      "country_of_origin": "France",
+      "flag": "🇫🇷",
+      "color": "#2563EB"
+    },
+    {
       "model_id_pattern": "mistral",
       "display_name": "Mistral",
       "provider": "Mistral AI",
@@ -111,6 +127,22 @@
       "country_of_origin": "USA",
       "flag": "🇺🇸",
       "color": "#1D4ED8"
+    },
+    {
+      "model_id_pattern": "gemini-3-flash-thinking",
+      "display_name": "Gemini 3 Flash Thinking",
+      "provider": "Google",
+      "country_of_origin": "USA",
+      "flag": "🇺🇸",
+      "color": "#16A34A"
+    },
+    {
+      "model_id_pattern": "gemini-3-flash",
+      "display_name": "Gemini 3 Flash",
+      "provider": "Google",
+      "country_of_origin": "USA",
+      "flag": "🇺🇸",
+      "color": "#15803D"
     },
     {
       "model_id_pattern": "gemini",

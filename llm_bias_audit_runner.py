@@ -630,7 +630,7 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=__doc__,
     )
     p.add_argument("--input", "-i", required=True, help="Path to the audit prompts file (.csv or .xlsx)")
-    p.add_argument("--output", "-o", default="audit_results.csv", help="Path for the results .csv file")
+    p.add_argument("--output", "-o", default="audit_results/audit_results.csv", help="Path for the results .csv file (default: audit_results/)")
     p.add_argument(
         "--provider", "-p", nargs="+", default=["anthropic"],
         choices=list(PROVIDER_REGISTRY.keys()),

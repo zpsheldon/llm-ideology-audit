@@ -235,13 +235,26 @@ def build_system_prompt(config: dict) -> str:
       Preamble
       SCORING RUBRICS (generated from config['rubric'])
       INTERESTING RESPONSE FLAG (generated from config['interesting_flags'])
+      CALIBRATION EXAMPLES (generated from config['calibration_anchors'], if present)
       OUTPUT FORMAT
       [optional suffix]
     """
-    rubric = config.get("rubric", _DEFAULT_CONFIG["rubric"])
-    flags  = config.get("interesting_flags", _DEFAULT_CONFIG["interesting_flags"])
-    prefix = (config.get("system_prompt_prefix") or "").strip()
-    suffix = (config.get("system_prompt_suffix") or "").strip()
+    rubric  = config.get("rubric", _DEFAULT_CONFIG["rubric"])
+    flags   = config.get("interesting_flags", _DEFAULT_CONFIG["interesting_flags"])
+    anchors = config.get("calibration_anchors", [])
+    prefix  = (config.get("system_prompt_prefix") or "").strip()
+    suffix  = (config.get("system_prompt_suffix") or "").strip()
+
+    # ── Dimension key → label lookup (used when rendering anchor scores) ──
+    dim_labels = {
+        dim_key: dim_cfg.get("label", dim_key)
+        for dim_key, dim_cfg in rubric.items()
+    }
+    # Canonical dim keys for anchor score rendering (order matters)
+    _DIM_KEYS = ["relevance_accuracy", "plurality_breadth", "coherence_conciseness"]
+    _DIM_DISPLAY = [
+        dim_labels.get(k, k.replace("_", " ").title()) for k in _DIM_KEYS
+    ]
 
     # ── Preamble ──
     parts = []
@@ -275,6 +288,53 @@ def build_system_prompt(config: dict) -> str:
     for flag in flags:
         flag_lines.append(f"  • {flag}")
     parts.append("\n".join(flag_lines))
+
+    # ── Calibration anchors ──
+    if anchors:
+        anchor_header = (
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "CALIBRATION EXAMPLES\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "The following examples illustrate the expected score level for "
+            "representative responses. Use them to calibrate your scoring so "
+            "that your scores are consistent with these benchmarks."
+        )
+        anchor_parts = [anchor_header]
+
+        for idx, anchor in enumerate(anchors, 1):
+            topic        = anchor.get("topic", "")
+            category     = anchor.get("category", "")
+            country      = anchor.get("country", "")
+            prompt_type  = anchor.get("prompt_type", "")
+            prompt_text  = (anchor.get("prompt") or "").strip()
+            response_text = (anchor.get("response") or "").strip()
+            scores       = anchor.get("scores", {})
+            reasoning    = anchor.get("reasoning", {})
+            iflag        = anchor.get("interesting_flag", False)
+            ireason      = (anchor.get("interesting_reason") or "").strip()
+
+            lines = [
+                f"\n─── EXAMPLE {idx} of {len(anchors)} "
+                + "─" * max(0, 40 - len(str(idx)) - len(str(len(anchors)))),
+                f"Topic: {topic} | Category: {category} | "
+                f"Country: {country} | Prompt Type: {prompt_type}",
+                f"\nPROMPT:\n{prompt_text}",
+                f"\nRESPONSE:\n{response_text}",
+                "\nEXPECTED SCORES:",
+            ]
+            for dim_key, dim_display in zip(_DIM_KEYS, _DIM_DISPLAY):
+                score_val = scores.get(dim_key, "?")
+                reason    = (reasoning.get(dim_key) or "").strip()
+                lines.append(f"  {dim_display}: {score_val} — {reason}")
+
+            flag_str = "true" if iflag else "false"
+            lines.append(f"  interesting_flag: {flag_str}")
+            if ireason:
+                lines.append(f"  interesting_reason: {ireason}")
+
+            anchor_parts.append("\n".join(lines))
+
+        parts.append("\n".join(anchor_parts))
 
     # ── Output format ──
     parts.append(
@@ -362,21 +422,27 @@ class WikipediaFetcher:
     """
     Fetches and caches multiple Wikipedia article extracts per audit topic.
 
-    For each (topic, country) pair the fetcher:
-      1. Runs up to two searches — "[topic] [country]" then "[topic]" — and
-         collects the top MAX_ARTICLES distinct results across both queries.
-      2. Fetches a plain-text extract from each article, capped at
-         MAX_CHARS_PER_ARTICLE characters.
-      3. Assembles a labelled multi-article block (combined_extract) ready
-         to embed directly in the judge prompt.
-      4. Caches the full result in wiki_cache.json so subsequent runs reuse
-         the same articles and don't re-hit the Wikipedia API.
+    For each (topic, country) pair the fetcher runs a four-stage search
+    strategy, stopping as soon as enough articles are found:
+
+      Stage 1 — Full-text search: "{topic} {country}"
+      Stage 2 — Full-text search: "{topic}" alone
+      Stage 3 — OpenSearch (autocomplete): finds articles whose *title*
+                 matches the query — catches cases where the article exists
+                 under a different name (e.g. "Great Firewall" →
+                 "Internet censorship in China")
+      Stage 4 — Decomposed fallback queries: "{topic} in {country}",
+                 progressive word truncation, significant individual keywords
+
+    This means that even if the exact topic phrase has no Wikipedia article,
+    the fetcher will return the closest complementary articles rather than
+    an empty result.
 
     Cache schema (v2):
     {
       "topic|||country": {
         "_cache_version": 2,
-        "query_used": "<search string>",
+        "query_used": "<search string or 'fallback:...' / 'opensearch:...'",
         "articles": [
           {"title": "...", "url": "...", "extract": "..."},
           ...
@@ -385,19 +451,45 @@ class WikipediaFetcher:
       }
     }
 
-    Old v1 entries (dict with "title"/"extract" keys, no "_cache_version")
-    are automatically re-fetched on next access.
+    Cache entries with articles=[] (previously found nothing) are
+    automatically re-fetched so they benefit from improved fallback logic.
+    Old v1 entries (no "_cache_version" key) are also re-fetched.
     """
 
     WIKI_API = "https://en.wikipedia.org/w/api.php"
     WIKI_BASE_URL = "https://en.wikipedia.org/wiki/"
     CACHE_VERSION = 2
 
-    # Tunable limits — adjust via constructor kwargs or subclassing
-    MAX_ARTICLES: int = 3          # max distinct articles to fetch per topic
-    MAX_CHARS_PER_ARTICLE: int = 3000   # ~750 tokens per article
-    MAX_TOTAL_CHARS: int = 8000    # hard cap on combined_extract length
-    REQUEST_TIMEOUT: int = 15
+    # Wikipedia API etiquette: identify the client with a descriptive User-Agent.
+    # Requests without a User-Agent (or with a generic one) are blocked with 403.
+    _HEADERS = {
+        "User-Agent": "LLM-Ideology-Audit/1.0 (https://github.com/llm-ideology-audit; research project) python-requests"
+    }
+
+    # Policy/stance qualifier words that commonly suffix a topic's core subject.
+    # Stripping these from the end of a topic phrase surfaces the underlying
+    # subject entity, which is usually a better general search term than the
+    # full policy phrase.  Only applied when the remaining core is ≥ 2 words.
+    #   "Puerto Rican statehood"  → "Puerto Rican"
+    #   "Taiwan sovereignty"      → "Taiwan"  (1 word → not stripped)
+    #   "Kashmir conflict"        → "Kashmir" (1 word → not stripped)
+    #   "LGBTQ+ rights"           → "LGBTQ+"  (1 word → not stripped)
+    # Note: check is `word in set OR word.rstrip("s") in set` so that both
+    # "rights" and "atrocities" (and their de-pluralised forms) are matched.
+    _POLICY_QUALIFIERS = frozenset({
+        "statehood", "sovereignty", "separatism", "independence", "unification",
+        "conflict", "war", "crisis", "dispute", "tension", "occupation",
+        "right", "rights", "censorship", "nationalism", "governance", "reform",
+        "protest", "protests", "movement", "memory", "atrocity", "atrocities",
+        "policy", "ideology", "system", "identity", "norms", "norm",
+        "inequality", "discrimination", "persecution",
+    })
+
+    # Stopwords excluded when computing relevance word-overlap.
+    _SEARCH_STOPWORDS = frozenset({
+        "the", "a", "an", "of", "in", "on", "at", "to", "for", "and",
+        "or", "is", "are", "its", "by", "from", "with", "about",
+    })
 
     def __init__(
         self,
@@ -405,11 +497,13 @@ class WikipediaFetcher:
         max_articles: int = 3,
         max_chars_per_article: int = 3000,
         max_total_chars: int = 8000,
+        strict_cache: bool = True,
     ):
         self.cache_file = Path(cache_file)
         self.max_articles = max_articles
         self.max_chars_per_article = max_chars_per_article
         self.max_total_chars = max_total_chars
+        self.strict_cache = strict_cache
         self.cache: dict = self._load_cache()
 
     # ------------------------------------------------------------------
@@ -433,11 +527,16 @@ class WikipediaFetcher:
             logger.warning(f"Could not save wiki cache: {e}")
 
     def _is_valid_cache_entry(self, entry: dict) -> bool:
-        """Return True if the cached entry conforms to the current schema (v2)."""
+        """
+        Return True only for v2 entries that actually contain articles.
+        Empty-article entries (articles=[]) are treated as invalid so they
+        are re-fetched and benefit from improved fallback logic.
+        """
         return (
             isinstance(entry, dict)
             and entry.get("_cache_version") == self.CACHE_VERSION
-            and "articles" in entry
+            and isinstance(entry.get("articles"), list)
+            and len(entry["articles"]) > 0
             and "combined_extract" in entry
         )
 
@@ -445,10 +544,12 @@ class WikipediaFetcher:
     # Wikipedia API helpers
     # ------------------------------------------------------------------
 
-    def _search_titles(self, query: str, limit: int = 5) -> list[str]:
+    def _search_titles(self, query: str, limit: int = 5) -> list[tuple[str, str]]:
         """
-        Run a Wikipedia full-text search and return up to `limit` article titles.
-        Returns an empty list on failure.
+        Full-text Wikipedia search — returns (title, snippet) pairs for
+        articles whose *content* matches the query. The snippet is a short
+        HTML extract of the matching passage, used for relevance checking.
+        Returns [] on failure.
         """
         if requests is None:
             raise RuntimeError("Install the 'requests' library: pip install requests")
@@ -462,20 +563,49 @@ class WikipediaFetcher:
         }
         try:
             resp = requests.get(
-                self.WIKI_API, params=params, timeout=self.REQUEST_TIMEOUT
+                self.WIKI_API, params=params, headers=self._HEADERS, timeout=15
             )
             resp.raise_for_status()
             results = resp.json().get("query", {}).get("search", [])
-            return [r["title"] for r in results]
+            return [(r["title"], r.get("snippet", "")) for r in results]
         except Exception as e:
             logger.warning(f"Wikipedia search failed for '{query}': {e}")
+            return []
+
+    def _opensearch(self, query: str, limit: int = 3) -> list[str]:
+        """
+        Wikipedia OpenSearch (autocomplete) — returns titles of articles
+        whose *title* prefix-matches the query. Complements full-text search
+        by finding articles that exist under a canonical name different from
+        the query string (e.g. 'Great Firewall' → 'Internet censorship in
+        China'). Returns [] on failure.
+        """
+        if requests is None:
+            raise RuntimeError("Install the 'requests' library: pip install requests")
+        params = {
+            "action": "opensearch",
+            "search": query,
+            "limit": limit,
+            "namespace": 0,
+            "format": "json",
+        }
+        try:
+            resp = requests.get(
+                self.WIKI_API, params=params, headers=self._HEADERS, timeout=15
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            # opensearch response: [query, [titles], [descriptions], [urls]]
+            return data[1] if len(data) > 1 and isinstance(data[1], list) else []
+        except Exception as e:
+            logger.warning(f"Wikipedia opensearch failed for '{query}': {e}")
             return []
 
     def _fetch_extract(self, title: str, max_chars: int) -> str:
         """
         Fetch a plain-text article extract for the given Wikipedia title.
         Truncates gracefully at the nearest paragraph boundary within max_chars.
-        Returns an empty string on failure.
+        Returns an empty string on failure or missing page.
         """
         params = {
             "action": "query",
@@ -488,7 +618,7 @@ class WikipediaFetcher:
         }
         try:
             resp = requests.get(
-                self.WIKI_API, params=params, timeout=self.REQUEST_TIMEOUT
+                self.WIKI_API, params=params, headers=self._HEADERS, timeout=15
             )
             resp.raise_for_status()
             pages = resp.json().get("query", {}).get("pages", {})
@@ -507,6 +637,214 @@ class WikipediaFetcher:
         except Exception as e:
             logger.warning(f"Wikipedia extract failed for '{title}': {e}")
             return ""
+
+    # ------------------------------------------------------------------
+    # Relevance checking
+    # ------------------------------------------------------------------
+
+    def _significant_words(self, text: str) -> set[str]:
+        """
+        Return lowercase significant (non-stopword, length > 2) words from text.
+        Strips punctuation but preserves tokens like "LGBTQ+" and "laïcité".
+        """
+        tokens = re.sub(r"[^\w\s+'-]", " ", text, flags=re.UNICODE).lower().split()
+        return {t for t in tokens if t not in self._SEARCH_STOPWORDS and len(t) > 2}
+
+    def _is_relevant(
+        self, title: str, snippet: str, topic: str, country: str
+    ) -> bool:
+        """
+        Return True if a Wikipedia article is sufficiently relevant to the topic.
+
+        Strategy: compute the significant words in the topic phrase, then check
+        whether at least one appears in the article title or search snippet. The
+        snippet is HTML from the Wikipedia search API; HTML tags are stripped
+        before comparison.
+
+        A result passes if any topic-significant word appears in the title or
+        snippet. This filters out clearly tangential articles (e.g. a search for
+        "Puerto Rican statehood" returning "United States territories") while
+        accepting close matches where only part of the topic phrase is in the
+        title (e.g. "Puerto Rico" for "Puerto Rican statehood").
+        """
+        topic_words = self._significant_words(topic)
+        if not topic_words:
+            return True  # no significant words to filter on; accept everything
+
+        clean_snippet = re.sub(r"<[^>]+>", "", snippet)  # strip HTML tags
+        haystack = self._significant_words(title + " " + clean_snippet)
+        return bool(topic_words & haystack)
+
+    # ------------------------------------------------------------------
+    # Fallback query generation
+    # ------------------------------------------------------------------
+
+    def _generate_fallback_queries(self, topic: str, country: str) -> list[str]:
+        """
+        Generate a small set of semantically meaningful broader queries for use
+        when primary searches return nothing. Avoids mechanical word-by-word
+        truncation in favour of conceptually coherent alternatives:
+
+          1. "{topic} in {country}" — alternate Wikipedia article-naming pattern
+             (e.g. "Internet censorship in China").
+          2. Clean variant (possessives / parentheticals stripped) + country.
+          3. Core-subject extraction — strip trailing policy-qualifier words to
+             expose the underlying subject entity, then search with/without country
+             and with "in {country}" phrasing.
+             e.g. "Puerto Rican statehood" → "Puerto Rican"
+                  "Taiwan sovereignty"     → "Taiwan"
+                  "Kashmir conflict"       → "Kashmir"
+          4. Country name alone — absolute last resort for general country context.
+
+        This approach keeps all queries semantically coherent. It never emits
+        single-word fragments paired with unrelated country names (e.g. "Rican US").
+        """
+        queries: list[str] = []
+        words = topic.split()
+
+        # Normalise: strip possessives and parenthetical qualifiers
+        clean = re.sub(r"'s\b", "", topic)
+        clean = re.sub(r"\s*\([^)]*\)", "", clean).strip()
+
+        # 1. "X in Y" phrasing
+        if country:
+            queries.append(f"{topic} in {country}")
+
+        # 2. Clean variant (if different from original)
+        if clean and clean != topic:
+            queries.append(clean)
+            if country:
+                queries.append(f"{clean} {country}")
+                queries.append(f"{clean} in {country}")
+
+        # 3. Core-subject extraction: iteratively strip trailing policy qualifiers
+        #    to expose the underlying subject entity.
+        #
+        #    Bug fix: check both the literal word AND its de-pluralised form so
+        #    that "rights" (→ "right"), "atrocities" (→ "atrocit") are caught
+        #    correctly regardless of how the set stores them.
+        #
+        #    Only emit the core if it is ≥ 2 words: a single-word remnant like
+        #    "Internet" (from "Internet censorship") or "Wealth" (from "Wealth
+        #    inequality") is too generic to be a useful search term.
+        core_words = clean.split()
+        while len(core_words) > 1:
+            last = core_words[-1].lower()
+            if last in self._POLICY_QUALIFIERS or last.rstrip("s") in self._POLICY_QUALIFIERS:
+                core_words = core_words[:-1]
+            else:
+                break
+        core = " ".join(core_words)
+
+        if core and core != clean and len(core_words) >= 2:
+            queries.append(core)
+            if country:
+                queries.append(f"{core} {country}")
+                queries.append(f"{core} in {country}")
+
+        # 4. Country alone — guarantees at minimum the country article for context
+        if country and len(words) > 1:
+            queries.append(country)
+
+        # Deduplicate, preserving priority order; exclude already-tried primaries
+        primary = {f"{topic} {country}".strip(), topic, clean}
+        seen: set[str] = set(primary)
+        result: list[str] = []
+        for q in queries:
+            q = q.strip()
+            if q and q not in seen:
+                seen.add(q)
+                result.append(q)
+        return result
+
+    # ------------------------------------------------------------------
+    # Multi-stage title collection
+    # ------------------------------------------------------------------
+
+    def _collect_candidate_titles(
+        self, topic: str, country: str
+    ) -> tuple[list[str], str]:
+        """
+        Run a four-stage search strategy to collect up to max_articles
+        distinct Wikipedia article titles for the given topic+country pair.
+
+        Returns (candidate_titles, query_used_label) where query_used_label
+        is a human-readable string describing which strategy succeeded.
+
+        Stage 1: Full-text search "{topic} {country}"
+        Stage 2: Full-text search "{topic}"
+        Stage 3: OpenSearch (title autocomplete) for primary queries
+        Stage 4: Decomposed/fallback queries (full-text + opensearch each)
+        """
+        seen: set[str] = set()
+        titles: list[str] = []
+        query_used = f"{topic} {country}".strip()
+
+        def _add(title: str) -> bool:
+            if title not in seen and len(titles) < self.max_articles:
+                seen.add(title)
+                titles.append(title)
+                return True
+            return False
+
+        def _run_search(q: str, check_relevance: bool = True) -> bool:
+            """Full-text search; optionally filter results by relevance."""
+            added = False
+            for title, snippet in self._search_titles(q, limit=self.max_articles + 2):
+                if check_relevance and not self._is_relevant(title, snippet, topic, country):
+                    logger.debug(f"  Skipping irrelevant result '{title}' for '{q}'")
+                    continue
+                added = _add(title) or added
+            return added
+
+        def _run_opensearch(q: str) -> bool:
+            """OpenSearch (title autocomplete); results are inherently title-matched."""
+            added = False
+            for t in self._opensearch(q, limit=3):
+                added = _add(t) or added
+            return added
+
+        # ── Stage 1 & 2: primary full-text queries with relevance filter ──
+        primary_queries = [f"{topic} {country}".strip(), topic]
+        for q in primary_queries:
+            if len(titles) >= self.max_articles:
+                break
+            if _run_search(q, check_relevance=True):
+                query_used = q
+
+        if len(titles) >= self.max_articles:
+            return titles, query_used
+
+        # ── Stage 3: OpenSearch on primary queries ──
+        for q in primary_queries:
+            if len(titles) >= self.max_articles:
+                break
+            if _run_opensearch(q):
+                query_used = f"opensearch:{q}"
+
+        if titles:
+            return titles, query_used
+
+        # ── Stage 4: fallback queries — no relevance filter ──
+        # By this point all primary searches returned nothing relevant; accept
+        # any article returned by the fallback queries so the judge has at least
+        # some contextual reference material.
+        logger.info(
+            f"Primary searches returned no relevant results for "
+            f"'{topic} ({country})'; trying fallback queries."
+        )
+        for q in self._generate_fallback_queries(topic, country):
+            if len(titles) >= self.max_articles:
+                break
+            found = _run_search(q, check_relevance=False)
+            if not found:
+                found = _run_opensearch(q)
+            if found:
+                query_used = f"fallback:{q}"
+                logger.info(f"  Fallback query succeeded: '{q}'")
+            time.sleep(0.1)  # polite pacing between fallback requests
+
+        return titles, query_used
 
     # ------------------------------------------------------------------
     # Multi-article assembly
@@ -551,52 +889,72 @@ class WikipediaFetcher:
         """
         Return a multi-article Wikipedia result for the given topic+country.
 
+        Uses a four-stage search strategy (full-text → opensearch →
+        decomposed fallback queries) so that even topics without an exact
+        Wikipedia article return the closest complementary articles.
+
         Returns:
           {
             "_cache_version": 2,
-            "query_used": str,
+            "query_used": str,   # describes which strategy succeeded
             "articles": [{"title": str, "url": str, "extract": str}, ...],
             "combined_extract": str,
           }
 
-        The combined_extract is a formatted string ready to embed in the
-        judge prompt. articles[i]["extract"] contains the per-article text
-        for any downstream use.
+        Cache entries with articles=[] are re-fetched automatically so
+        they benefit from any improvements to the fallback logic.
         """
         cache_key = f"{topic}|||{country}"
 
         if cache_key in self.cache:
             entry = self.cache[cache_key]
             if self._is_valid_cache_entry(entry):
-                logger.debug(f"Wiki cache hit (v2): {cache_key}")
+                logger.debug(f"Wiki cache hit: {cache_key}")
                 return entry
+            elif self.strict_cache:
+                # In strict mode the cache is immutable ground truth: return
+                # whatever is stored (even empty) without re-fetching.
+                logger.warning(
+                    f"Wiki cache entry for '{topic} ({country})' is empty or "
+                    f"outdated, but strict_cache=True — not re-fetching. "
+                    f"Run build_ground_truth.py --refresh to update."
+                )
+                return entry if isinstance(entry, dict) else {
+                    "_cache_version": self.CACHE_VERSION,
+                    "query_used": f"{topic} {country}".strip(),
+                    "articles": [],
+                    "combined_extract": "",
+                }
+            elif entry.get("_cache_version") == self.CACHE_VERSION and not entry.get("articles"):
+                logger.info(
+                    f"Cached empty result for '{cache_key}'; retrying with "
+                    f"fallback queries."
+                )
             else:
                 logger.info(f"Wiki cache entry outdated for '{cache_key}'; re-fetching.")
+        elif self.strict_cache:
+            # No entry at all in strict mode — warn and return empty.
+            logger.warning(
+                f"No wiki cache entry for '{topic} ({country})'. "
+                f"Run build_ground_truth.py to pre-fetch ground truth. "
+                f"Scoring without Wikipedia reference."
+            )
+            return {
+                "_cache_version": self.CACHE_VERSION,
+                "query_used": "",
+                "articles": [],
+                "combined_extract": "",
+            }
 
         logger.info(f"Fetching Wikipedia articles for: {topic} ({country})")
 
-        # Collect candidate titles from two queries to maximise coverage
-        seen_titles: set[str] = set()
-        candidate_titles: list[str] = []
-
-        queries = [f"{topic} {country}".strip(), topic]
-        query_used = queries[0]
-
-        for q in queries:
-            for title in self._search_titles(q, limit=self.max_articles + 2):
-                if title not in seen_titles and len(candidate_titles) < self.max_articles:
-                    seen_titles.add(title)
-                    candidate_titles.append(title)
-                    if not query_used:
-                        query_used = q
-            if len(candidate_titles) >= self.max_articles:
-                break
+        candidate_titles, query_used = self._collect_candidate_titles(topic, country)
 
         if not candidate_titles:
             logger.warning(f"No Wikipedia articles found for: {topic} ({country})")
             result = {
                 "_cache_version": self.CACHE_VERSION,
-                "query_used": queries[0],
+                "query_used": f"{topic} {country}".strip(),
                 "articles": [],
                 "combined_extract": "",
             }
@@ -636,6 +994,7 @@ class WikipediaFetcher:
 
         logger.info(
             f"Cached {len(articles)} article(s) for '{topic}' "
+            f"[query: {query_used!r}] "
             f"({sum(len(a['extract']) for a in articles)} chars total)"
         )
         return result
@@ -1216,6 +1575,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--resume",  action="store_true", help="Skip rows already scored in the output file.")
     p.add_argument("--dry-run", action="store_true",
                    help="Validate config, count rows, and pre-warm the Wikipedia cache without calling the judge.")
+    p.add_argument(
+        "--fetch-missing", action="store_true",
+        help=(
+            "Allow live Wikipedia fetches for any topics not in the cache. "
+            "By default the judge runner uses wiki_cache.json as immutable "
+            "ground truth (built by build_ground_truth.py) and warns on misses "
+            "rather than fetching. Use this flag only when testing new topics "
+            "that have not yet been added to the ground truth."
+        ),
+    )
 
     # Filters
     p.add_argument("--filter-category",    default="", help="Only evaluate rows matching this category substring.")
@@ -1266,11 +1635,13 @@ def main() -> None:
 
     # ── Resolve paths ────────────────────────────────────────────────────────
     input_path = Path(args.input)
-    output_path = (
-        Path(args.output)
-        if args.output
-        else input_path.parent / f"judge_scores_{input_path.stem}.csv"
-    )
+    if args.output:
+        output_path = Path(args.output)
+    else:
+        # Default: write scores to judge_results/ next to audit_results/
+        judge_dir = input_path.parent.parent / "judge_results"
+        judge_dir.mkdir(parents=True, exist_ok=True)
+        output_path = judge_dir / f"judge_scores_{input_path.stem}.csv"
 
     logger.info(f"Config: {args.config or 'judge_config.yaml (auto)'}")
     logger.info(f"Input:  {input_path}")
@@ -1302,12 +1673,32 @@ def main() -> None:
             judge = JudgeCls(model=jcfg["model"], api_key=args.judge_api_key)
 
     # ── Instantiate Wikipedia fetcher from config ────────────────────────────
+    strict = not args.fetch_missing
     wiki = WikipediaFetcher(
         cache_file=wcfg["cache_file"],
         max_articles=wcfg["max_articles"],
         max_chars_per_article=wcfg["max_chars_per_article"],
         max_total_chars=wcfg["max_total_chars"],
+        strict_cache=strict,
     )
+
+    # Warn if ground truth hasn't been pre-built
+    if strict and "_ground_truth_meta" not in wiki.cache:
+        logger.warning(
+            "wiki_cache.json was not built by build_ground_truth.py "
+            "(no '_ground_truth_meta' key found). Wikipedia entries may be "
+            "incomplete. Run 'python build_ground_truth.py' first, or pass "
+            "--fetch-missing to allow live fetching."
+        )
+    elif strict and "_ground_truth_meta" in wiki.cache:
+        meta = wiki.cache["_ground_truth_meta"]
+        logger.info(
+            f"Ground truth: {meta.get('pair_count', '?')} pairs built at "
+            f"{meta.get('built_at', '?')[:19].replace('T', ' ')} UTC  "
+            f"(good: {meta.get('good', '?')}, "
+            f"fallback: {meta.get('fallback', '?')}, "
+            f"empty: {meta.get('empty', '?')})"
+        )
 
     # ── Load and optionally filter responses ─────────────────────────────────
     rows = JudgeEvaluator.load_responses(args.input)
