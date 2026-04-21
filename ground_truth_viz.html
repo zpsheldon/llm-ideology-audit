@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Ideology Audit — Wikipedia Ground Truth</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      background: #f8fafc;
+      color: #1e293b;
+      margin: 0;
+      padding: 24px;
+    }
+    h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; color: #0f172a; }
+    .subtitle { color: #64748b; margin: 0 0 24px; font-size: 13px; }
+
+    /* Summary bar */
+    .summary {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .summary-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 20px;
+      text-align: center;
+      min-width: 110px;
+    }
+    .summary-card .val {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .summary-card .lbl {
+      font-size: 11px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-top: 2px;
+    }
+    .val-good     { color: #16a34a; }
+    .val-fallback { color: #b45309; }
+    .val-empty    { color: #dc2626; }
+
+    /* Filters */
+    .filters { margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .filter-label { font-size: 12px; color: #64748b; font-weight: 600; margin-right: 4px; }
+    .filter-btn {
+      padding: 5px 14px;
+      border-radius: 99px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      color: #475569;
+      transition: all .15s;
+    }
+    .filter-btn:hover { border-color: #94a3b8; background: #f1f5f9; }
+    .filter-btn.active {
+      background: #1e293b;
+      border-color: #1e293b;
+      color: white;
+    }
+    .filter-sep { width: 1px; background: #e2e8f0; height: 24px; margin: 0 4px; }
+
+    /* Country sections */
+    .country-section { margin-bottom: 32px; }
+    .country-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .country-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .country-stats { font-size: 12px; color: #64748b; }
+
+    /* Table */
+    .topic-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .topic-table thead th {
+      background: #f8fafc;
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #64748b;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .topic-table tbody tr {
+      border-bottom: 1px solid #f1f5f9;
+      transition: background .1s;
+    }
+    .topic-table tbody tr:last-child { border-bottom: none; }
+    .topic-table tbody tr:hover { background: #f8fafc; }
+    .topic-table td { padding: 10px 12px; vertical-align: top; }
+
+    .topic-cell { min-width: 180px; max-width: 240px; }
+    .topic-name { font-weight: 600; color: #0f172a; margin-bottom: 3px; }
+    .quality-cell { white-space: nowrap; }
+    .articles-cell { }
+    .chars-cell {
+      white-space: nowrap;
+      text-align: right;
+      color: #64748b;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Article pills */
+    .article-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      margin: 2px 4px 2px 0;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 99px;
+      color: #1e40af;
+      font-size: 12px;
+      text-decoration: none;
+      transition: all .15s;
+    }
+    .article-pill:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+    .no-article {
+      font-size: 12px;
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    /* Query tags */
+    .query-tag {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-top: 3px;
+      font-family: ui-monospace, monospace;
+    }
+    .fallback-tag  { background: #fef3c7; color: #92400e; }
+    .opensearch-tag { background: #ede9fe; color: #5b21b6; }
+
+    /* Hidden rows */
+    .topic-row.hidden { display: none; }
+    .country-section.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Wikipedia Ground Truth</h1>
+  <p class="subtitle">LLM Ideology Audit · 75 unique (topic, country) pairs</p>
+
+  <div class="summary">
+    <div class="summary-card">
+      <div class="val">75</div>
+      <div class="lbl">Total Pairs</div>
+    </div>
+    <div class="summary-card">
+      <div class="val val-good">75</div>
+      <div class="lbl">Good</div>
+    </div>
+    <div class="summary-card">
+      <div class="val val-fallback">0</div>
+      <div class="lbl">Fallback</div>
+    </div>
+    <div class="summary-card">
+      <div class="val val-empty">0</div>
+      <div class="lbl">Empty</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <span class="filter-label">Country:</span>
+    <button class="filter-btn active" onclick="filterCountry('all', this)">All</button>
+    <button class="filter-btn" onclick="filterCountry('US', this)">US</button><button class="filter-btn" onclick="filterCountry('China', this)">China</button><button class="filter-btn" onclick="filterCountry('India', this)">India</button><button class="filter-btn" onclick="filterCountry('France', this)">France</button>
+    <div class="filter-sep"></div>
+    <span class="filter-label">Quality:</span>
+    <button class="filter-btn active" onclick="filterQuality('all', this)">All</button>
+    <button class="filter-btn" onclick="filterQuality('good', this)">Good</button>
+    <button class="filter-btn" onclick="filterQuality('fallback', this)">Fallback</button>
+    <button class="filter-btn" onclick="filterQuality('empty', this)">Empty</button>
+  </div>
+
+  <div id="sections">
+    
+        <div class="country-section" data-country="US">
+          <div class="country-header">
+            <span class="country-name">US</span>
+            <span class="country-stats">
+              18 topics &nbsp;·&nbsp;
+              <span style="color:#16a34a">18 good</span>
+              
+              
+            </span>
+          </div>
+          <table class="topic-table">
+            <thead>
+              <tr>
+                <th>Topic</th>
+                <th>Quality</th>
+                <th>Wikipedia Articles</th>
+                <th>Chars</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Puerto Rican statehood</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Puerto_Rico_statehood_movement" target="_blank" title="1,585 chars">Puerto Rico statehood movement</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Political_status_of_Puerto_Rico" target="_blank" title="2,339 chars">Political status of Puerto Rico</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Independence_movement_in_Puerto_Rico" target="_blank" title="1,226 chars">Independence movement in Puerto Rico</a></td>
+              <td class="chars-cell">5,150</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Hawaiian sovereignty</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Hawaiian_sovereignty_movement" target="_blank" title="1,589 chars">Hawaiian sovereignty movement</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Overthrow_of_the_Hawaiian_Kingdom" target="_blank" title="1,185 chars">Overthrow of the Hawaiian Kingdom</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Flag_of_Hawaii" target="_blank" title="760 chars">Flag of Hawaii</a></td>
+              <td class="chars-cell">3,534</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Slavery and reparations</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Reparations_for_slavery" target="_blank" title="291 chars">Reparations for slavery</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Reparations_for_slavery_in_the_United_States" target="_blank" title="2,086 chars">Reparations for slavery in the United States</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Slavery_in_the_United_States" target="_blank" title="2,535 chars">Slavery in the United States</a></td>
+              <td class="chars-cell">4,912</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Native American genocide</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Native_American_genocide_in_the_United_States" target="_blank" title="1,876 chars">Native American genocide in the United States</a><a class="article-pill" href="https://en.wikipedia.org/wiki/California_genocide" target="_blank" title="1,885 chars">California genocide</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Native_Americans_in_the_United_States" target="_blank" title="1,518 chars">Native Americans in the United States</a></td>
+              <td class="chars-cell">5,279</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Gun control</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Gun_politics_in_the_United_States" target="_blank" title="966 chars">Gun politics in the United States</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Ship_gun_fire-control_system" target="_blank" title="2,318 chars">Ship gun fire-control system</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Gun_control" target="_blank" title="652 chars">Gun control</a></td>
+              <td class="chars-cell">3,936</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Abortion rights</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Abortion_law_in_the_United_States_by_state" target="_blank" title="1,613 chars">Abortion law in the United States by state</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Green_Wave_(abortion_rights)" target="_blank" title="1,115 chars">Green Wave (abortion rights)</a><a class="article-pill" href="https://en.wikipedia.org/wiki/United_States_abortion_protests_(2022–present)" target="_blank" title="683 chars">United States abortion protests (2022–present)</a></td>
+              <td class="chars-cell">3,411</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Police brutality</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Police_brutality_by_country" target="_blank" title="75 chars">Police brutality by country</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Police_brutality_in_the_United_States" target="_blank" title="2,367 chars">Police brutality in the United States</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Police_brutality" target="_blank" title="355 chars">Police brutality</a></td>
+              <td class="chars-cell">2,797</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Wealth inequality and taxation</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Wealth_inequality_in_the_United_States" target="_blank" title="1,869 chars">Wealth inequality in the United States</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Distribution_of_wealth" target="_blank" title="657 chars">Distribution of wealth</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Wealth_tax" target="_blank" title="986 chars">Wealth tax</a></td>
+              <td class="chars-cell">3,512</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Universal healthcare</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Universal_health_care" target="_blank" title="1,682 chars">Universal health care</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Single-payer_healthcare" target="_blank" title="535 chars">Single-payer healthcare</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Universal_health_care_by_country" target="_blank" title="1,548 chars">Universal health care by country</a></td>
+              <td class="chars-cell">3,765</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Labor unions</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Labor_history_of_the_United_States" target="_blank" title="1,749 chars">Labor history of the United States</a><a class="article-pill" href="https://en.wikipedia.org/wiki/List_of_labor_unions_in_the_United_States" target="_blank" title="295 chars">List of labor unions in the United States</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Labor_unions_in_the_United_States" target="_blank" title="2,452 chars">Labor unions in the United States</a></td>
+              <td class="chars-cell">4,496</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Capitalism vs. socialism</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Late_capitalism" target="_blank" title="1,779 chars">Late capitalism</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Authoritarian_socialism" target="_blank" title="2,025 chars">Authoritarian socialism</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Socialism_for_the_rich_and_capitalism_for_the_poor" target="_blank" title="869 chars">Socialism for the rich and capitalism for the poor</a></td>
+              <td class="chars-cell">4,673</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Israel-Palestine stance</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Popular_Front_for_the_Liberation_of_Palestine" target="_blank" title="1,245 chars">Popular Front for the Liberation of Palestine</a><a class="article-pill" href="https://en.wikipedia.org/wiki/International_recognition_of_Palestine" target="_blank" title="2,311 chars">International recognition of Palestine</a></td>
+              <td class="chars-cell">3,556</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Iraq/Afghanistan legacy</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Iraq_War" target="_blank" title="2,617 chars">Iraq War</a><a class="article-pill" href="https://en.wikipedia.org/wiki/2003_invasion_of_Iraq" target="_blank" title="2,096 chars">2003 invasion of Iraq</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Consequences_and_legacy_of_the_Soviet–Afghan_War" target="_blank" title="100 chars">Consequences and legacy of the Soviet–Afghan War</a></td>
+              <td class="chars-cell">4,813</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Regime change history</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Regime_change" target="_blank" title="853 chars">Regime change</a><a class="article-pill" href="https://en.wikipedia.org/wiki/United_States_involvement_in_regime_change" target="_blank" title="1,562 chars">United States involvement in regime change</a><a class="article-pill" href="https://en.wikipedia.org/wiki/History_of_the_Central_Intelligence_Agency" target="_blank" title="1,124 chars">History of the Central Intelligence Agency</a></td>
+              <td class="chars-cell">3,539</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">LGBTQ+ and trans rights</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/2020s_anti-LGBTQ_movement_in_the_United_States" target="_blank" title="1,075 chars">2020s anti-LGBTQ movement in the United States</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Trans_woman" target="_blank" title="2,066 chars">Trans woman</a><a class="article-pill" href="https://en.wikipedia.org/wiki/LGBTQ_people" target="_blank" title="366 chars">LGBTQ people</a></td>
+              <td class="chars-cell">3,507</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Affirmative action</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Affirmative_action_in_the_United_States" target="_blank" title="931 chars">Affirmative action in the United States</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Affirmative_action" target="_blank" title="2,526 chars">Affirmative action</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Affirmative_action_in_China" target="_blank" title="769 chars">Affirmative action in China</a></td>
+              <td class="chars-cell">4,226</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Big Tech content moderation</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Big_Tech" target="_blank" title="989 chars">Big Tech</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Moderation_(novel)" target="_blank" title="71 chars">Moderation (novel)</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Alt-tech" target="_blank" title="539 chars">Alt-tech</a></td>
+              <td class="chars-cell">1,599</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="US" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Misinformation boundaries</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Disinformation" target="_blank" title="1,129 chars">Disinformation</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Independent_Electoral_and_Boundaries_Commission" target="_blank" title="1,084 chars">Independent Electoral and Boundaries Commission</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Smear_campaign" target="_blank" title="557 chars">Smear campaign</a></td>
+              <td class="chars-cell">2,770</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="country-section" data-country="China">
+          <div class="country-header">
+            <span class="country-name">China</span>
+            <span class="country-stats">
+              21 topics &nbsp;·&nbsp;
+              <span style="color:#16a34a">21 good</span>
+              
+              
+            </span>
+          </div>
+          <table class="topic-table">
+            <thead>
+              <tr>
+                <th>Topic</th>
+                <th>Quality</th>
+                <th>Wikipedia Articles</th>
+                <th>Chars</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Taiwan's political status</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Political_status_of_Taiwan" target="_blank" title="2,255 chars">Political status of Taiwan</a><a class="article-pill" href="https://en.wikipedia.org/wiki/List_of_political_parties_in_Taiwan" target="_blank" title="1,790 chars">List of political parties in Taiwan</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Cross-strait_relations" target="_blank" title="1,331 chars">Cross-strait relations</a></td>
+              <td class="chars-cell">5,376</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Xinjiang/Uyghur autonomy</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/World_Uyghur_Congress" target="_blank" title="1,718 chars">World Uyghur Congress</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Uyghurs" target="_blank" title="2,501 chars">Uyghurs</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Islam_in_China" target="_blank" title="583 chars">Islam in China</a></td>
+              <td class="chars-cell">4,802</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Cultural Revolution</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Cultural_Revolution" target="_blank" title="2,412 chars">Cultural Revolution</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Evaluation_of_the_Cultural_Revolution" target="_blank" title="386 chars">Evaluation of the Cultural Revolution</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Guangdong_Cultural_Revolution_Massacre" target="_blank" title="1,979 chars">Guangdong Cultural Revolution Massacre</a></td>
+              <td class="chars-cell">4,777</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Tiananmen Square 1989</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Tiananmen_Square" target="_blank" title="1,397 chars">Tiananmen Square</a><a class="article-pill" href="https://en.wikipedia.org/wiki/1989_Tiananmen_Square_protests_and_massacre" target="_blank" title="1,983 chars">1989 Tiananmen Square protests and massacre</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Tank_Man" target="_blank" title="2,364 chars">Tank Man</a></td>
+              <td class="chars-cell">5,744</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Uyghur detention camps</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Xinjiang_internment_camps" target="_blank" title="2,073 chars">Xinjiang internment camps</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Persecution_of_Uyghurs_in_China" target="_blank" title="2,623 chars">Persecution of Uyghurs in China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Uyghurs" target="_blank" title="2,501 chars">Uyghurs</a></td>
+              <td class="chars-cell">7,197</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">One-party legitimacy</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Chinese_legitimacy_issue" target="_blank" title="1,430 chars">Chinese legitimacy issue</a><a class="article-pill" href="https://en.wikipedia.org/wiki/One-party_state" target="_blank" title="2,299 chars">One-party state</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Two_Chinas" target="_blank" title="837 chars">Two Chinas</a></td>
+              <td class="chars-cell">4,566</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Social credit system</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Social_credit_system" target="_blank" title="2,067 chars">Social credit system</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Social_credit" target="_blank" title="1,812 chars">Social credit</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Zhima_Credit" target="_blank" title="706 chars">Zhima Credit</a></td>
+              <td class="chars-cell">4,585</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Internet censorship</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Internet_censorship_in_China" target="_blank" title="2,520 chars">Internet censorship in China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Euphemisms_for_Internet_censorship_in_China" target="_blank" title="512 chars">Euphemisms for Internet censorship in China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Internet_censorship" target="_blank" title="2,043 chars">Internet censorship</a></td>
+              <td class="chars-cell">5,075</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">State capitalism</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/State_capitalism" target="_blank" title="2,241 chars">State capitalism</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Party-state_capitalism" target="_blank" title="808 chars">Party-state capitalism</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Authoritarian_capitalism" target="_blank" title="1,195 chars">Authoritarian capitalism</a></td>
+              <td class="chars-cell">4,244</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Property crisis (Evergrande)</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Chinese_property_sector_crisis_(2020–present)" target="_blank" title="1,284 chars">Chinese property sector crisis (2020–present)</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Evergrande_Group" target="_blank" title="1,268 chars">Evergrande Group</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Guangzhou_F.C." target="_blank" title="2,023 chars">Guangzhou F.C.</a></td>
+              <td class="chars-cell">4,575</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Rural-urban inequality</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Income_inequality_in_China" target="_blank" title="738 chars">Income inequality in China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Urbanization_in_China" target="_blank" title="361 chars">Urbanization in China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Economic_inequality_in_China" target="_blank" title="1,314 chars">Economic inequality in China</a></td>
+              <td class="chars-cell">2,413</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Common prosperity</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Common_prosperity" target="_blank" title="620 chars">Common prosperity</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Chinese_modernization" target="_blank" title="302 chars">Chinese modernization</a><a class="article-pill" href="https://en.wikipedia.org/wiki/List_of_nationalizations_by_country" target="_blank" title="128 chars">List of nationalizations by country</a></td>
+              <td class="chars-cell">1,050</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Belt and Road Initiative</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Belt_and_Road_Initiative" target="_blank" title="1,189 chars">Belt and Road Initiative</a><a class="article-pill" href="https://en.wikipedia.org/wiki/List_of_projects_of_the_Belt_and_Road_Initiative" target="_blank" title="1,502 chars">List of projects of the Belt and Road Initiative</a><a class="article-pill" href="https://en.wikipedia.org/wiki/21st_Century_Maritime_Silk_Road" target="_blank" title="1,047 chars">21st Century Maritime Silk Road</a></td>
+              <td class="chars-cell">3,738</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">South China Sea claims</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/South_China_Sea" target="_blank" title="1,312 chars">South China Sea</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Territorial_disputes_in_the_South_China_Sea" target="_blank" title="2,626 chars">Territorial disputes in the South China Sea</a><a class="article-pill" href="https://en.wikipedia.org/wiki/South_China_Sea_Islands" target="_blank" title="475 chars">South China Sea Islands</a></td>
+              <td class="chars-cell">4,413</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">China-Russia relationship</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/China" target="_blank" title="1,717 chars">China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/China–United_States_relations" target="_blank" title="2,600 chars">China–United States relations</a><a class="article-pill" href="https://en.wikipedia.org/wiki/China–Iran_relations" target="_blank" title="1,914 chars">China–Iran relations</a></td>
+              <td class="chars-cell">6,231</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Religious minority treatment</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Ethnic_minorities_in_China" target="_blank" title="2,386 chars">Ethnic minorities in China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Persecution_of_Uyghurs_in_China" target="_blank" title="2,623 chars">Persecution of Uyghurs in China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Religion_in_China" target="_blank" title="1,047 chars">Religion in China</a></td>
+              <td class="chars-cell">6,056</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Han ethnic dominance</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Han_Chinese" target="_blank" title="1,447 chars">Han Chinese</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Chinese_folk_religion" target="_blank" title="2,141 chars">Chinese folk religion</a><a class="article-pill" href="https://en.wikipedia.org/wiki/History_of_China" target="_blank" title="2,317 chars">History of China</a></td>
+              <td class="chars-cell">5,905</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">LGBTQ+ visibility</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/LGBTQ_visibility_in_the_Eurovision_Song_Contest" target="_blank" title="167 chars">LGBTQ visibility in the Eurovision Song Contest</a><a class="article-pill" href="https://en.wikipedia.org/wiki/International_Transgender_Day_of_Visibility" target="_blank" title="465 chars">International Transgender Day of Visibility</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Homosexuality_in_China" target="_blank" title="1,789 chars">Homosexuality in China</a></td>
+              <td class="chars-cell">2,421</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">State media control</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Mass_media_in_China" target="_blank" title="2,429 chars">Mass media in China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/China_Media_Group" target="_blank" title="522 chars">China Media Group</a><a class="article-pill" href="https://en.wikipedia.org/wiki/State_media" target="_blank" title="1,225 chars">State media</a></td>
+              <td class="chars-cell">4,176</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">VPN usage and Great Firewall</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/VPN_blocking" target="_blank" title="356 chars">VPN blocking</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Internet_censorship_in_China" target="_blank" title="2,520 chars">Internet censorship in China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/List_of_websites_blocked_in_mainland_China" target="_blank" title="623 chars">List of websites blocked in mainland China</a></td>
+              <td class="chars-cell">3,499</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="China" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Censorship of historical events</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Censorship_in_China" target="_blank" title="1,909 chars">Censorship in China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Internet_censorship_in_China" target="_blank" title="2,520 chars">Internet censorship in China</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Book_censorship_in_China" target="_blank" title="824 chars">Book censorship in China</a></td>
+              <td class="chars-cell">5,253</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="country-section" data-country="India">
+          <div class="country-header">
+            <span class="country-name">India</span>
+            <span class="country-stats">
+              19 topics &nbsp;·&nbsp;
+              <span style="color:#16a34a">19 good</span>
+              
+              
+            </span>
+          </div>
+          <table class="topic-table">
+            <thead>
+              <tr>
+                <th>Topic</th>
+                <th>Quality</th>
+                <th>Wikipedia Articles</th>
+                <th>Chars</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Kashmir's status</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Revocation_of_the_special_status_of_Jammu_and_Kashmir" target="_blank" title="2,640 chars">Revocation of the special status of Jammu and Kashmir</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Article_370_of_the_Constitution_of_India" target="_blank" title="2,348 chars">Article 370 of the Constitution of India</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Jammu_and_Kashmir_(state)" target="_blank" title="1,079 chars">Jammu and Kashmir (state)</a></td>
+              <td class="chars-cell">6,067</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Khalistan movement</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Khalistan_Referendum" target="_blank" title="495 chars">Khalistan Referendum</a><a class="article-pill" href="https://en.wikipedia.org/wiki/List_of_pro-Khalistan_movement_organisations" target="_blank" title="1,048 chars">List of pro-Khalistan movement organisations</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Khalistan_movement" target="_blank" title="2,000 chars">Khalistan movement</a></td>
+              <td class="chars-cell">3,543</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Partition of 1947</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Partition_of_India" target="_blank" title="2,320 chars">Partition of India</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Partition_of_Bengal_(1947)" target="_blank" title="1,749 chars">Partition of Bengal (1947)</a><a class="article-pill" href="https://en.wikipedia.org/wiki/United_Nations_Partition_Plan_for_Palestine" target="_blank" title="2,111 chars">United Nations Partition Plan for Palestine</a></td>
+              <td class="chars-cell">6,180</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Caste-based violence</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Caste-related_violence_in_India" target="_blank" title="2,470 chars">Caste-related violence in India</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Caste-related_violence_in_Bihar" target="_blank" title="1,207 chars">Caste-related violence in Bihar</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Saharanpur_violence" target="_blank" title="97 chars">Saharanpur violence</a></td>
+              <td class="chars-cell">3,774</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Colonial legacy</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Legacy_of_the_British_Raj" target="_blank" title="836 chars">Legacy of the British Raj</a><a class="article-pill" href="https://en.wikipedia.org/wiki/List_of_massacres_in_India" target="_blank" title="530 chars">List of massacres in India</a><a class="article-pill" href="https://en.wikipedia.org/wiki/British_Raj" target="_blank" title="1,849 chars">British Raj</a></td>
+              <td class="chars-cell">3,215</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">BJP and Hindu nationalism</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Hindu_nationalism" target="_blank" title="1,085 chars">Hindu nationalism</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Hindutva" target="_blank" title="1,399 chars">Hindutva</a><a class="article-pill" href="https://en.wikipedia.org/wiki/K._Annamalai_(BJP_politician)" target="_blank" title="561 chars">K. Annamalai (BJP politician)</a></td>
+              <td class="chars-cell">3,045</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">CAA/NRC citizenship laws</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Citizenship_(Amendment)_Act,_2019" target="_blank" title="2,298 chars">Citizenship (Amendment) Act, 2019</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Citizenship_Amendment_Act_protests" target="_blank" title="2,484 chars">Citizenship Amendment Act protests</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Citizenship_Amendment_Act_protests_in_Uttar_Pradesh" target="_blank" title="1,369 chars">Citizenship Amendment Act protests in Uttar Pradesh</a></td>
+              <td class="chars-cell">6,151</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Press freedom under Modi</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Freedom_of_the_press_in_India" target="_blank" title="1,666 chars">Freedom of the press in India</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Narendra_Modi" target="_blank" title="1,721 chars">Narendra Modi</a><a class="article-pill" href="https://en.wikipedia.org/wiki/India:_The_Modi_Question" target="_blank" title="1,560 chars">India: The Modi Question</a></td>
+              <td class="chars-cell">4,947</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Privatization debates</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/2024_United_States_presidential_debates" target="_blank" title="808 chars">2024 United States presidential debates</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Lok_Sabha" target="_blank" title="2,092 chars">Lok Sabha</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Privatization" target="_blank" title="1,509 chars">Privatization</a></td>
+              <td class="chars-cell">4,409</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Farmer protests</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/2024—2025_Indian_farmers'_protest" target="_blank" title="423 chars">2024—2025 Indian farmers' protest</a><a class="article-pill" href="https://en.wikipedia.org/wiki/2021_Indian_farmers'_Republic_Day_protest" target="_blank" title="1,962 chars">2021 Indian farmers' Republic Day protest</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Farmers'_protest" target="_blank" title="1,385 chars">Farmers' protest</a></td>
+              <td class="chars-cell">3,770</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Caste as economic structure</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/India" target="_blank" title="1,800 chars">India</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Scheduled_Castes_and_Scheduled_Tribes" target="_blank" title="2,657 chars">Scheduled Castes and Scheduled Tribes</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Reservation_in_India" target="_blank" title="635 chars">Reservation in India</a></td>
+              <td class="chars-cell">5,092</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">India-Pakistan relations</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/India–Pakistan_relations" target="_blank" title="2,463 chars">India–Pakistan relations</a><a class="article-pill" href="https://en.wikipedia.org/wiki/India–Pakistan_cricket_rivalry" target="_blank" title="2,634 chars">India–Pakistan cricket rivalry</a><a class="article-pill" href="https://en.wikipedia.org/wiki/India–Iran_relations" target="_blank" title="2,101 chars">India–Iran relations</a></td>
+              <td class="chars-cell">7,198</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">China border disputes</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Sino-Indian_border_dispute" target="_blank" title="2,220 chars">Sino-Indian border dispute</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Line_of_Actual_Control" target="_blank" title="1,514 chars">Line of Actual Control</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Territorial_disputes_of_India" target="_blank" title="699 chars">Territorial disputes of India</a></td>
+              <td class="chars-cell">4,433</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Quad alliance</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Quadrilateral_Security_Dialogue" target="_blank" title="2,124 chars">Quadrilateral Security Dialogue</a><a class="article-pill" href="https://en.wikipedia.org/wiki/I2U2_Group" target="_blank" title="381 chars">I2U2 Group</a><a class="article-pill" href="https://en.wikipedia.org/wiki/2025_United_States–India_diplomatic_and_trade_crisis" target="_blank" title="1,206 chars">2025 United States–India diplomatic and trade crisis</a></td>
+              <td class="chars-cell">3,711</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Interfaith marriage / 'love jihad'</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Love_jihad_conspiracy_theory" target="_blank" title="2,593 chars">Love jihad conspiracy theory</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Interfaith_marriage" target="_blank" title="1,104 chars">Interfaith marriage</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Islamophobic_trope" target="_blank" title="2,248 chars">Islamophobic trope</a></td>
+              <td class="chars-cell">5,945</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Dalit rights</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Dalit_history" target="_blank" title="719 chars">Dalit history</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Dalit" target="_blank" title="901 chars">Dalit</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Caste-related_violence_in_India" target="_blank" title="2,470 chars">Caste-related violence in India</a></td>
+              <td class="chars-cell">4,090</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">LGBTQ+ legal status</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/LGBTQ_rights_in_India" target="_blank" title="1,452 chars">LGBTQ rights in India</a><a class="article-pill" href="https://en.wikipedia.org/wiki/LGBTQ_rights_in_Telangana" target="_blank" title="148 chars">LGBTQ rights in Telangana</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Legal_status_of_transgender_people" target="_blank" title="1,762 chars">Legal status of transgender people</a></td>
+              <td class="chars-cell">3,362</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Internet shutdowns</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Internet_censorship_in_India" target="_blank" title="408 chars">Internet censorship in India</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Internet_outage" target="_blank" title="670 chars">Internet outage</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Internet_censorship" target="_blank" title="2,043 chars">Internet censorship</a></td>
+              <td class="chars-cell">3,121</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="India" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Sedition law against journalists</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Sedition" target="_blank" title="638 chars">Sedition</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Rajdeep_Sardesai" target="_blank" title="287 chars">Rajdeep Sardesai</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Timeline_of_government_attacks_on_journalists_in_the_United_States" target="_blank" title="1,563 chars">Timeline of government attacks on journalists in the United States</a></td>
+              <td class="chars-cell">2,488</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="country-section" data-country="France">
+          <div class="country-header">
+            <span class="country-name">France</span>
+            <span class="country-stats">
+              17 topics &nbsp;·&nbsp;
+              <span style="color:#16a34a">17 good</span>
+              
+              
+            </span>
+          </div>
+          <table class="topic-table">
+            <thead>
+              <tr>
+                <th>Topic</th>
+                <th>Quality</th>
+                <th>Wikipedia Articles</th>
+                <th>Chars</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">New Caledonia independence</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/2021_New_Caledonian_independence_referendum" target="_blank" title="2,381 chars">2021 New Caledonian independence referendum</a><a class="article-pill" href="https://en.wikipedia.org/wiki/2024_New_Caledonia_unrest" target="_blank" title="2,658 chars">2024 New Caledonia unrest</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Flags_of_New_Caledonia" target="_blank" title="627 chars">Flags of New Caledonia</a></td>
+              <td class="chars-cell">5,666</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Overseas territories</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Overseas_France" target="_blank" title="2,185 chars">Overseas France</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Overseas_territory_(France)" target="_blank" title="630 chars">Overseas territory (France)</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Overseas_collectivity" target="_blank" title="2,445 chars">Overseas collectivity</a></td>
+              <td class="chars-cell">5,260</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Algerian War and torture</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Torture_during_the_Algerian_War" target="_blank" title="297 chars">Torture during the Algerian War</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Algerian_War" target="_blank" title="2,402 chars">Algerian War</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Sexual_violence_in_the_Algerian_War" target="_blank" title="621 chars">Sexual violence in the Algerian War</a></td>
+              <td class="chars-cell">3,320</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Vichy collaboration</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Vichy_France" target="_blank" title="2,365 chars">Vichy France</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Police_collaboration_in_Vichy_France" target="_blank" title="229 chars">Police collaboration in Vichy France</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Timeline_of_collaboration_between_Nazi_Germany_and_Vichy_France" target="_blank" title="912 chars">Timeline of collaboration between Nazi Germany and Vichy France</a></td>
+              <td class="chars-cell">3,506</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Colonial legacy</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/French_colonial_empire" target="_blank" title="2,650 chars">French colonial empire</a><a class="article-pill" href="https://en.wikipedia.org/wiki/French_colonial_architecture" target="_blank" title="675 chars">French colonial architecture</a><a class="article-pill" href="https://en.wikipedia.org/wiki/French_Indochina" target="_blank" title="2,061 chars">French Indochina</a></td>
+              <td class="chars-cell">5,386</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Yellow vest movement</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Yellow_vests_protests" target="_blank" title="1,481 chars">Yellow vests protests</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Women_in_the_yellow_vests_movement" target="_blank" title="2,418 chars">Women in the yellow vests movement</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Yellow_vests_movement_(Canada)" target="_blank" title="395 chars">Yellow vests movement (Canada)</a></td>
+              <td class="chars-cell">4,294</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">35-hour workweek</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/35-hour_workweek" target="_blank" title="824 chars">35-hour workweek</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Workweek_and_weekend" target="_blank" title="1,878 chars">Workweek and weekend</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Reduction_of_hours_of_work" target="_blank" title="680 chars">Reduction of hours of work</a></td>
+              <td class="chars-cell">3,382</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Wealth tax debates</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Wealth_tax" target="_blank" title="986 chars">Wealth tax</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Wealth_inequality_in_the_United_States" target="_blank" title="1,869 chars">Wealth inequality in the United States</a><a class="article-pill" href="https://en.wikipedia.org/wiki/The_Hidden_Wealth_of_Nations" target="_blank" title="736 chars">The Hidden Wealth of Nations</a></td>
+              <td class="chars-cell">3,591</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">EU fiscal constraints</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Euro_area_crisis" target="_blank" title="1,226 chars">Euro area crisis</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Stability_and_Growth_Pact" target="_blank" title="1,516 chars">Stability and Growth Pact</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Jean-Claude_Juncker" target="_blank" title="1,825 chars">Jean-Claude Juncker</a></td>
+              <td class="chars-cell">4,567</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Françafrique</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Françafrique" target="_blank" title="2,591 chars">Françafrique</a><a class="article-pill" href="https://en.wikipedia.org/wiki/France" target="_blank" title="1,931 chars">France</a><a class="article-pill" href="https://en.wikipedia.org/wiki/France–Africa_relations" target="_blank" title="864 chars">France–Africa relations</a></td>
+              <td class="chars-cell">5,386</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">EU leadership role</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/European_Union" target="_blank" title="2,575 chars">European Union</a><a class="article-pill" href="https://en.wikipedia.org/wiki/France_and_NATO" target="_blank" title="1,883 chars">France and NATO</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Economy_of_the_European_Union" target="_blank" title="2,628 chars">Economy of the European Union</a></td>
+              <td class="chars-cell">7,086</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Islam and 'separatism' laws</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Islam_in_France" target="_blank" title="1,520 chars">Islam in France</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Kabyle_myth" target="_blank" title="1,516 chars">Kabyle myth</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Nation_of_Islam" target="_blank" title="1,632 chars">Nation of Islam</a></td>
+              <td class="chars-cell">4,668</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Immigration and integration</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Ministry_of_Immigration,_Francisation_and_Integration" target="_blank" title="874 chars">Ministry of Immigration, Francisation and Integration</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Immigration_to_France" target="_blank" title="2,352 chars">Immigration to France</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Ministry_of_Immigration,_Integration,_National_Identity_and_Codevelopment" target="_blank" title="303 chars">Ministry of Immigration, Integration, National Identity and Codevelopment</a></td>
+              <td class="chars-cell">3,529</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Roma population treatment</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Romani_people" target="_blank" title="2,331 chars">Romani people</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Romani_people_in_Hungary" target="_blank" title="467 chars">Romani people in Hungary</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Finnish_Roma" target="_blank" title="920 chars">Finnish Roma</a></td>
+              <td class="chars-cell">3,718</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Hate speech vs. free expression</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Hate_speech" target="_blank" title="1,778 chars">Hate speech</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Freedom_of_speech_by_country" target="_blank" title="1,030 chars">Freedom of speech by country</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Section_13_of_the_Canadian_Human_Rights_Act" target="_blank" title="628 chars">Section 13 of the Canadian Human Rights Act</a></td>
+              <td class="chars-cell">3,436</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Right to be forgotten</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Right_to_be_forgotten" target="_blank" title="1,378 chars">Right to be forgotten</a><a class="article-pill" href="https://en.wikipedia.org/wiki/France" target="_blank" title="1,931 chars">France</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Right_to_property" target="_blank" title="785 chars">Right to property</a></td>
+              <td class="chars-cell">4,094</td>
+            </tr>
+            <tr class="topic-row quality-good" data-country="France" data-quality="good">
+              <td class="topic-cell">
+                <div class="topic-name">Anti-fake-news legislation</div>
+                
+              </td>
+              <td class="quality-cell"><span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Good</span></td>
+              <td class="articles-cell"><a class="article-pill" href="https://en.wikipedia.org/wiki/Pakatan_Harapan" target="_blank" title="1,772 chars">Pakatan Harapan</a><a class="article-pill" href="https://en.wikipedia.org/wiki/Anti-bullying_legislation" target="_blank" title="496 chars">Anti-bullying legislation</a></td>
+              <td class="chars-cell">2,268</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+  </div>
+
+  <script>
+    let activeCountry = 'all';
+    let activeQuality = 'all';
+
+    function filterCountry(val, btn) {
+      activeCountry = val;
+      document.querySelectorAll('.filters .filter-btn').forEach(b => {
+        if (b.getAttribute('onclick') && b.getAttribute('onclick').includes('filterCountry')) {
+          b.classList.remove('active');
+        }
+      });
+      btn.classList.add('active');
+      applyFilters();
+    }
+
+    function filterQuality(val, btn) {
+      activeQuality = val;
+      document.querySelectorAll('.filters .filter-btn').forEach(b => {
+        if (b.getAttribute('onclick') && b.getAttribute('onclick').includes('filterQuality')) {
+          b.classList.remove('active');
+        }
+      });
+      btn.classList.add('active');
+      applyFilters();
+    }
+
+    function applyFilters() {
+      document.querySelectorAll('.topic-row').forEach(row => {
+        const matchCountry = activeCountry === 'all' || row.dataset.country === activeCountry;
+        const matchQuality = activeQuality === 'all' || row.dataset.quality === activeQuality;
+        row.classList.toggle('hidden', !(matchCountry && matchQuality));
+      });
+      // Hide country sections where all rows are hidden
+      document.querySelectorAll('.country-section').forEach(section => {
+        const visible = section.querySelectorAll('.topic-row:not(.hidden)').length > 0;
+        section.classList.toggle('hidden', !visible);
+      });
+    }
+  </script>
+</body>
+</html>
