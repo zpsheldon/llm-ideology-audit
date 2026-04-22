@@ -281,7 +281,7 @@ python llm_judge_runner.py \
 | `--config` | `judge_config.yaml` | Configuration file path |
 | `--print-prompt` | — | Print the generated system prompt and exit |
 | `--judge-provider` | `openai` (from config) | Override judge provider |
-| `--judge-model` | `gpt-4o` (from config) | Override judge model |
+| `--judge-model` | `gpt-4o-mini` (from config) | Override judge model |
 | `--filter-*` | — | Same filters as the audit runner |
 | `--resume` | off | Skip rows already scored |
 | `--dry-run` | off | Validate config and cache coverage without judging |
