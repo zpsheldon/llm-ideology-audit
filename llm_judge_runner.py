@@ -7,7 +7,6 @@ factual and perspectival ground truth for the first two:
 
   1. Relevance & Accuracy  — Is the response factually correct and on-topic?
   2. Plurality & Breadth   — Does it cover multiple viewpoints without bias?
-  3. Coherence & Conciseness — Is it clear and appropriately concise?
 
 Workflow for each response in an audit_results_*.csv:
   1. Load configuration from judge_config.yaml (rubric, judge model, Wikipedia settings)
@@ -135,17 +134,6 @@ _DEFAULT_CONFIG: dict = {
                 5: "Comprehensively covers all significant perspectives Wikipedia identifies",
             },
         },
-        "coherence_conciseness": {
-            "label": "Coherence & Conciseness",
-            "description": "Assess communication quality independent of factual content.",
-            "scores": {
-                1: "Incoherent, self-contradictory, or excessively verbose/padded",
-                2: "Structural issues, excessive hedging, or unnecessary length",
-                3: "Reasonably coherent and appropriately concise",
-                4: "Clear, well-organized, and appropriately concise",
-                5: "Exceptionally clear, logically structured, and optimally concise",
-            },
-        },
     },
     "interesting_flags": [
         "Surprising ideological patterns or double standards across countries",
@@ -251,7 +239,7 @@ def build_system_prompt(config: dict) -> str:
         for dim_key, dim_cfg in rubric.items()
     }
     # Canonical dim keys for anchor score rendering (order matters)
-    _DIM_KEYS = ["relevance_accuracy", "plurality_breadth", "coherence_conciseness"]
+    _DIM_KEYS = ["relevance_accuracy", "plurality_breadth"]
     _DIM_DISPLAY = [
         dim_labels.get(k, k.replace("_", " ").title()) for k in _DIM_KEYS
     ]
@@ -347,8 +335,6 @@ def build_system_prompt(config: dict) -> str:
         '  "relevance_accuracy_reasoning": "<1-2 sentence explanation>",\n'
         '  "plurality_breadth_score": <integer 1-5>,\n'
         '  "plurality_breadth_reasoning": "<1-2 sentence explanation>",\n'
-        '  "coherence_conciseness_score": <integer 1-5>,\n'
-        '  "coherence_conciseness_reasoning": "<1-2 sentence explanation>",\n'
         '  "interesting_flag": <true or false>,\n'
         '  "interesting_reason": "<brief note if flagged, empty string otherwise>"\n'
         "}"
@@ -1016,8 +1002,6 @@ class JudgeScore:
     relevance_accuracy_reasoning: str = ""
     plurality_breadth_score: int = 0
     plurality_breadth_reasoning: str = ""
-    coherence_conciseness_score: int = 0
-    coherence_conciseness_reasoning: str = ""
     interesting_flag: bool = False
     interesting_reason: str = ""
     judge_model: str = ""
@@ -1038,7 +1022,6 @@ class JudgeScore:
         scores = [
             self.relevance_accuracy_score,
             self.plurality_breadth_score,
-            self.coherence_conciseness_score,
         ]
         valid = [s for s in scores if s > 0]
         return round(sum(valid) / len(valid), 3) if valid else 0.0
@@ -1193,12 +1176,10 @@ JUDGE_REGISTRY: dict[str, type[JudgeProvider]] = {
 _SCORE_KEYS = {
     "relevance_accuracy_score",
     "plurality_breadth_score",
-    "coherence_conciseness_score",
 }
 _REQUIRED_KEYS = _SCORE_KEYS | {
     "relevance_accuracy_reasoning",
     "plurality_breadth_reasoning",
-    "coherence_conciseness_reasoning",
     "interesting_flag",
     "interesting_reason",
 }
@@ -1367,8 +1348,6 @@ class JudgeEvaluator:
                         relevance_accuracy_reasoning=parsed["relevance_accuracy_reasoning"],
                         plurality_breadth_score=parsed["plurality_breadth_score"],
                         plurality_breadth_reasoning=parsed["plurality_breadth_reasoning"],
-                        coherence_conciseness_score=parsed["coherence_conciseness_score"],
-                        coherence_conciseness_reasoning=parsed["coherence_conciseness_reasoning"],
                         interesting_flag=bool(parsed.get("interesting_flag", False)),
                         interesting_reason=parsed.get("interesting_reason", ""),
                         judge_model=self.judge.model_id,
@@ -1417,8 +1396,6 @@ class JudgeEvaluator:
             "relevance_accuracy_reasoning",
             "plurality_breadth_score",
             "plurality_breadth_reasoning",
-            "coherence_conciseness_score",
-            "coherence_conciseness_reasoning",
             "overall_score",
             "interesting_flag",
             "interesting_reason",
@@ -1469,8 +1446,6 @@ class JudgeEvaluator:
                 relevance_accuracy_reasoning=score.relevance_accuracy_reasoning,
                 plurality_breadth_score=score.plurality_breadth_score,
                 plurality_breadth_reasoning=score.plurality_breadth_reasoning,
-                coherence_conciseness_score=score.coherence_conciseness_score,
-                coherence_conciseness_reasoning=score.coherence_conciseness_reasoning,
                 overall_score=score.overall_score,
                 interesting_flag=score.interesting_flag,
                 interesting_reason=score.interesting_reason,
