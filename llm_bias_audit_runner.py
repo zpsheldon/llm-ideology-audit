@@ -332,6 +332,76 @@ class SarvamProvider(ModelProvider):
 
 # ---- Add new providers here and register them below ----
 
+class MistralProvider(ModelProvider):
+    """Mistral AI provider (Le Chat / mistral.ai).
+
+    Uses Mistral's OpenAI-compatible API endpoint.
+    Set MISTRAL_API_KEY in your environment before running.
+
+    Common model IDs:
+        lechat-standard   — maps to mistral-large-latest (or as configured)
+        lechat-thinking   — maps to magistral-medium-latest (thinking variant)
+    """
+
+    name = "mistral"
+    _BASE_URL = "https://api.mistral.ai/v1"
+
+    def __init__(self, model: str = "mistral-large-latest", api_key: str = ""):
+        try:
+            from openai import OpenAI
+        except ImportError:
+            raise ImportError("Install the OpenAI SDK: pip install openai")
+
+        self.model = model
+        self.client = OpenAI(
+            api_key=api_key or os.environ.get("MISTRAL_API_KEY", ""),
+            base_url=self._BASE_URL,
+        )
+
+    def send_prompt(
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        max_tokens: int = 4096,
+        temperature: float = 1.0,
+    ) -> ModelResponse:
+        t0 = time.perf_counter()
+        try:
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            elapsed = time.perf_counter() - t0
+
+            text = response.choices[0].message.content or ""
+            usage = response.usage
+            return ModelResponse(
+                provider=self.name,
+                model=self.model,
+                prompt_uid="",
+                response_text=text,
+                input_tokens=getattr(usage, "prompt_tokens", 0) if usage else 0,
+                output_tokens=getattr(usage, "completion_tokens", 0) if usage else 0,
+                latency_seconds=round(elapsed, 3),
+            )
+        except Exception as e:
+            return ModelResponse(
+                provider=self.name,
+                model=self.model,
+                prompt_uid="",
+                response_text="",
+                latency_seconds=round(time.perf_counter() - t0, 3),
+                error=str(e),
+            )
+
+
 class GenericOpenAICompatibleProvider(ModelProvider):
     """
     Generic provider for any OpenAI-compatible API (Mistral, Together,
@@ -408,6 +478,7 @@ PROVIDER_REGISTRY: dict[str, type[ModelProvider]] = {
     "anthropic": AnthropicProvider,
     "openai": OpenAIProvider,
     "sarvam": SarvamProvider,
+    "mistral": MistralProvider,
     "generic": GenericOpenAICompatibleProvider,
 }
 
@@ -634,7 +705,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--provider", "-p", nargs="+", default=["anthropic"],
         choices=list(PROVIDER_REGISTRY.keys()),
-        help="Provider(s) to use",
+        help="Provider(s) to use: anthropic, openai, sarvam, mistral, generic",
     )
     p.add_argument(
         "--model", "-m", nargs="+", default=None,
@@ -662,6 +733,7 @@ DEFAULT_MODELS = {
     "anthropic": "claude-sonnet-4-20250514",
     "openai": "gpt-4o",
     "sarvam": "sarvam-m-30b",
+    "mistral": "mistral-large-latest",
     "generic": "default",
 }
 
@@ -745,6 +817,11 @@ def main():
     all_results: list[tuple[PromptRow, ModelResponse]] = []
     total_calls = len(prompts) * len(providers)
     call_num = 0
+    # Tracks how many rows of all_results have already been written to disk.
+    # Checkpoints only flush the NEW rows since the last write, appending to
+    # whatever is already in the output file.  This means --resume runs never
+    # overwrite previously-completed rows.
+    last_written = 0
 
     for prov_name, provider in providers:
         model_id = provider.model
@@ -791,17 +868,31 @@ def main():
             batch_results.append((prompt, resp))
             all_results.append((prompt, resp))
 
-            # Periodic save
+            # Periodic save — only flush rows that haven't been written yet.
+            # append=True whenever the file already has content (resume or a
+            # prior checkpoint in this same run).
             if len(batch_results) % args.batch_save == 0:
-                write_results(args.output, prompts, all_results, append=False)
-                logging.info(f"Checkpoint saved ({len(all_results)} total results)")
+                to_write = all_results[last_written:]
+                write_results(
+                    args.output, prompts, to_write,
+                    append=(args.resume or last_written > 0),
+                )
+                last_written = len(all_results)
+                logging.info(f"Checkpoint saved ({last_written} rows flushed so far)")
 
             # Rate limit delay
             if args.delay > 0:
                 time.sleep(args.delay)
 
-    # Final save
-    write_results(args.output, prompts, all_results, append=False)
+    # Final save — flush any rows not yet written
+    to_write = all_results[last_written:]
+    if to_write:
+        write_results(
+            args.output, prompts, to_write,
+            append=(args.resume or last_written > 0),
+        )
+    elif not all_results:
+        logging.info("No new results to write (all prompts were already completed).")
 
     # Summary
     errors = sum(1 for _, r in all_results if r.error)
