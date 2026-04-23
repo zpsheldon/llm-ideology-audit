@@ -11,6 +11,14 @@ A systematic, scalable framework for measuring ideological bias in large languag
 - **Prompt strategy effects**: How does framing — neutral, explicitly pluralistic, or biased — change a model's willingness to engage or take a position?
 - **Double standards**: Do models apply different levels of scrutiny or framing to equivalent situations depending on which country is involved?
 
+Some guiding questions for our analysis:
+1. How does performance vary across all of the models, countries of origin, prompt strategy, and model types (e.g. fast vs. thinking)?
+2. How does performance vary across prompt categories and within prompt categories? Are there any surprising gaps in performance with respect to either dimension that we are measuring?
+3. How pluralistic and unbiased are the models when prompted with controversial topics that directly relate to their country of origin? For example, how do American models perform when prompted with a topic related to a sensitive part of American history such as Hawaiian sovereignty, as compared to Indian models?
+4. What topics get censored and to what extent do we think that reflects the political ideology of the model's country of origin?
+5. Which responses were flagged and why? Were they mostly due to unusually high compliance or resistance to the biased prompt strategy?
+6. What relationship is there, if any, between the two dimensions that we measured? It could be that the dimensions support each other (i.e. a more pluralistic answer means a more accurate answer) or that they are in tension with one another (i.e. a more pluralistic answer means a less relevant answer).
+
 ---
 
 ## Audit Methodology
