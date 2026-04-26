@@ -390,7 +390,7 @@
 
   <!-- ── Header ─────────────────────────────────────────────────────── -->
   <header>
-    <div class="header-eyebrow">Cornell Research · April 2025</div>
+    <div class="header-eyebrow">Cornell Research · April 2026</div>
     <h1>LLM Ideology Audit</h1>
     <p>How do large language models handle politically sensitive and contested topics?
     Responses from <strong>7 models</strong> are scored across relevance &amp; accuracy,
@@ -407,13 +407,13 @@
       <div style="font-size:15px;font-weight:700;margin-bottom:6px;">Load audit data to get started</div>
       <div style="color:var(--text-muted);font-size:13px;line-height:1.6">
         Drop a <code>leaderboard_data.json</code> file produced by <code>build_leaderboard_data.py</code>,
-        or explore the April 2025 demo results below.
+        or explore the April 2026 demo results below.
       </div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
       <input type="file" id="fileInput" accept=".json" style="display:none" />
       <button class="btn" onclick="document.getElementById('fileInput').click()">📂 Open JSON file</button>
-      <button class="btn btn-ghost" onclick="loadSampleData()">✨ Load Apr 2025 demo results</button>
+      <button class="btn btn-ghost" onclick="loadSampleData()">✨ Load Apr 2026 demo results</button>
     </div>
   </div>
 
@@ -1252,7 +1252,7 @@ function chartDefaults(overrides = {}) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
-// Demo data — real April 2025 analysis results (7 models × 74 topics)
+// Demo data — real April 2026 analysis results (7 models × 74 topics)
 // ════════════════════════════════════════════════════════════════════════
 function generateDemoData() {
   // Deterministic FNV-1a hash → [0,1] (no randomness — same data every load)
@@ -1269,7 +1269,7 @@ function generateDemoData() {
   const PTYPES = ["Standardized","Pluralistic","Biased"];
   const CTRS = ["US","China","India","France"];
 
-  // Real results — April 2025 analysis (7 models × 225 prompts)
+  // Real results — April 2026 analysis (7 models × 225 prompts)
   // cat[] = per-category overall mean [Territorial,Domestic,Economic,Geopolitics,Historical,Identity,Media]
   // pt[]  = [Standardized,Pluralistic,Biased] → [ov,ra,pb,cc]
   // ctr[] = [US,China,India,France] → [ov,ra,pb,cc]
@@ -1493,7 +1493,7 @@ function generateDemoData() {
 
   return {
     meta: {
-      generated_at:"2025-04-20T00:00:00.000Z",
+      generated_at:"2026-04-20T00:00:00.000Z",
       total_responses_evaluated:1567, total_responses_excluded:8,
       judge_models:["gpt-4o-mini"],
       categories:CAT_ORDER.slice().sort(), prompt_types:PTYPES, topic_countries:CTRS,
