@@ -5,15 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LLM Ideology Audit — Wikipedia Ground Truth</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       font-size: 14px;
       background: #f8fafc;
       color: #1e293b;
-      margin: 0;
-      padding: 24px;
     }
+
+    /* ── Shared top nav (matches leaderboard.html) ── */
+    .topnav {
+      position: sticky; top: 0; z-index: 200;
+      height: 52px;
+      background: rgba(8,12,22,.97);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid #232944;
+      display: flex; align-items: center;
+      padding: 0 28px; gap: 16px;
+    }
+    .topnav-brand { display: flex; align-items: center; gap: 10px; }
+    .topnav-icon {
+      width: 28px; height: 28px; border-radius: 7px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+    }
+    .topnav-title { font-size: 13.5px; font-weight: 700; letter-spacing: -.3px; white-space: nowrap; color: #e2e8f8; }
+    .topnav-sep { width: 1px; height: 18px; background: #2e3758; }
+    .topnav-links { display: flex; gap: 2px; align-items: center; }
+    .topnav-link {
+      font-size: 12px; font-weight: 500; color: #8892b0;
+      text-decoration: none; padding: 5px 10px; border-radius: 6px;
+      transition: all .15s; white-space: nowrap;
+    }
+    .topnav-link:hover { color: #e2e8f8; background: #1d2440; }
+    .topnav-link.active { color: #818cf8; background: rgba(99,102,241,.1); }
+    .topnav-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+    .main-content { padding: 28px; }
     h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; color: #0f172a; }
     .subtitle { color: #64748b; margin: 0 0 24px; font-size: 13px; }
 
@@ -176,6 +205,24 @@
   </style>
 </head>
 <body>
+
+<!-- ── Global top nav ──────────────────────────────────────────────── -->
+<nav class="topnav">
+  <div class="topnav-brand">
+    <div class="topnav-icon">⚖️</div>
+    <span class="topnav-title">LLM Ideology Audit</span>
+  </div>
+  <div class="topnav-sep"></div>
+  <div class="topnav-links">
+    <a href="leaderboard.html" class="topnav-link">Dashboard</a>
+    <a href="ground_truth_viz.html" class="topnav-link active">Ground Truth</a>
+  </div>
+  <div class="topnav-right">
+    <a href="https://github.com/bairixie/llm-ideology-audit" class="topnav-link" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</nav>
+
+<div class="main-content">
   <h1>Wikipedia Ground Truth</h1>
   <p class="subtitle">LLM Ideology Audit · 75 unique (topic, country) pairs</p>
 
@@ -1020,5 +1067,6 @@
       });
     }
   </script>
+</div><!-- /.main-content -->
 </body>
 </html>

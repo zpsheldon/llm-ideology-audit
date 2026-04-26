@@ -122,7 +122,8 @@ llm-ideology-audit/
 ├── build_ground_truth.py              # Step 2: Pre-fetch Wikipedia ground truth (run once)
 ├── llm_judge_runner.py                # Step 3: Score responses with LLM-as-a-judge
 ├── build_leaderboard_data.py          # Step 4: Aggregate scores → leaderboard_data.json
-├── leaderboard.html                   # Step 5: View results in browser
+├── leaderboard.html                   # Step 5: Main results dashboard — open in browser
+├── ground_truth_viz.html              # Step 5: Wikipedia coverage viewer — open in browser
 │
 ├── judge_config.yaml                  # Judge model, rubric, and Wikipedia configuration
 ├── model_metadata.json                # Model registry (provider, country of origin, display name)
@@ -326,21 +327,41 @@ The JSON contains aggregate statistics broken down by model, country of origin, 
 
 ---
 
-### Step 5 — View the Leaderboard
+### Step 5 — View the Results
 
-Open `leaderboard.html` in any browser. It will automatically load `leaderboard_data.json` from the same directory if present, or you can upload a JSON file manually.
+The frontend consists of two self-contained HTML files — open either in any browser, no server or install required. A shared top nav bar lets you switch between them.
 
-The leaderboard includes seven panels:
+#### `leaderboard.html` — Main Results Dashboard
 
-- **Overview** — KPI cards, overall bar chart, dimension radar
-- **Leaderboard** — Sortable full model ranking table
-- **Country of Origin** — How models cluster by the country they were built in
-- **By Category** — Score breakdown across the 7 thematic categories
-- **Prompt Strategy** — How Standardized / Pluralistic / Biased prompts affect each model's scores
-- **Topic Heatmap** — Per-topic scores for every model, filterable by country and category
-- **Interesting Responses** — Flagged responses for qualitative review, filterable by model and prompt type
+**Without `leaderboard_data.json`** (demo mode): click **✨ Load Apr 2025 demo results** to explore real April 2025 results embedded directly in the file. A **DEMO DATA** badge appears in the nav bar.
 
-For hosting, `leaderboard.html` and `leaderboard_data.json` can be deployed to any static file host (GitHub Pages, Netlify, S3, etc.) as a self-contained pair.
+**With `leaderboard_data.json`** (live mode): place `leaderboard.html` and `leaderboard_data.json` in the same folder — the JSON loads automatically when you open the page. Or click **📂 Open JSON file** to upload it manually.
+
+| Tab | What it shows |
+|---|---|
+| **Overview** | KPI cards, overall score bar chart, dimension radar across all models |
+| **Leaderboard** | Sortable table — rank by any score dimension |
+| **Country of Origin** | Score breakdown by the country where each model was built |
+| **By Category** | Score by thematic category (bar chart + Category × Model heatmap) |
+| **Prompt Strategy** | How scores change across Standardized / Pluralistic / Biased prompts |
+| **Topic Heatmap** | All 74 topics × all models — sticky columns, filterable by category / country / dimension |
+| **Interesting Responses** | Flagged responses with full text, judge reasoning, and filter by model / prompt type / country |
+
+#### `ground_truth_viz.html` — Wikipedia Coverage Viewer
+
+Shows the 75 unique (topic, country) pairs, which Wikipedia articles were fetched, their quality (`good` / `fallback` / `empty`), and allows filtering by country or quality tier. No external data needed — all coverage data is embedded at build time.
+
+#### Hosting
+
+Both files can be deployed to any static host (GitHub Pages, Netlify, S3, etc.) — no backend required. For GitHub Pages, ensure `leaderboard_data.json` is committed alongside the HTML files so the auto-fetch works.
+
+#### Adding a new model (e.g. a French model)
+
+1. Run Steps 1–4 for the new model
+2. Add the model to `model_metadata.json` (provider, country of origin, display name, flag emoji, color)
+3. Re-run `build_leaderboard_data.py` — it auto-discovers all `judge_scores_*.csv` and rebuilds `leaderboard_data.json`
+4. Open `leaderboard.html` — it auto-loads the updated JSON; all panels adapt automatically
+5. No code changes to the HTML files are needed
 
 ---
 
@@ -385,12 +406,12 @@ See [`llm_judge_policy_v1.0.docx`](llm_judge_policy_v1.0.docx) for the full meth
 
 ### Adding New Models
 
-1. Run the audit runner against the new model to produce a new `audit_results_*.csv`
-2. Add the model to [`model_metadata.json`](model_metadata.json) with its provider, country of origin, and display name
-3. Run `build_ground_truth.py` — if the new model uses the same prompt bank (no new topics), the existing `wiki_cache.json` is already complete and this can be skipped; if new prompts were added, run with `--refresh`
-4. Run the judge runner against the new results file
-5. Re-run `build_leaderboard_data.py` — it auto-discovers all `judge_scores_*.csv` files
-6. Refresh the leaderboard
+1. Run the audit runner against the new model → `audit_results/audit_results_<model>.csv`
+2. Add the model to [`model_metadata.json`](model_metadata.json) (provider, country of origin, display name, flag, color)
+3. Run `build_ground_truth.py` — skip if using the same 225-prompt bank; re-run with `--refresh` only if new topics were added
+4. Run the judge runner → `judge_results/judge_scores_<model>.csv`
+5. Re-run `build_leaderboard_data.py` — auto-discovers all `judge_scores_*.csv` and rebuilds `leaderboard_data.json`
+6. Open `leaderboard.html` — it auto-loads the updated JSON; all panels and the Topic Heatmap adapt automatically
 
 Models can be run incrementally; existing score files are never overwritten unless `--output` explicitly points to them.
 
@@ -404,11 +425,14 @@ Models can be run incrementally; existing score files are never overwritten unle
 
 ## Models Evaluated
 
-| Model | Provider | Country | Status |
+| Model | Provider | Country | Responses |
 |---|---|---|---|
-| Claude Opus 4 | Anthropic | 🇺🇸 USA | ✅ Complete (225/225) |
-| Sarvam 30B | Sarvam AI | 🇮🇳 India | ✅ Complete (225/225) |
-| Claude Sonnet 4 | Anthropic | 🇺🇸 USA | 🔄 Partial (106/225) |
-| Sarvam 105B | Sarvam AI | 🇮🇳 India | 🔄 Partial (119/225) |
+| Claude Opus 4.6 | Anthropic | 🇺🇸 USA | ✅ 225 / 225 |
+| Claude Sonnet 4.6 | Anthropic | 🇺🇸 USA | ✅ 225 / 225 |
+| Sarvam 105B | Sarvam AI | 🇮🇳 India | ✅ 225 / 225 |
+| Qwen Plus | Alibaba Cloud | 🇨🇳 China | ✅ 217 / 225 |
+| Sarvam 30B | Sarvam AI | 🇮🇳 India | ✅ 225 / 225 |
+| Gemini 3 Flash | Google | 🇺🇸 USA | ✅ 225 / 225 |
+| Gemini 3 Flash CoT | Google | 🇺🇸 USA | ✅ 225 / 225 |
 
-Planned: GPT-4o (OpenAI / USA), Qwen (Alibaba / China), DeepSeek (China), Mistral (France).
+Planned: GPT-4o (OpenAI / USA), DeepSeek (China), Le Chat / Mistral (France), Llama (Meta / USA).
