@@ -53,7 +53,6 @@ logger = logging.getLogger(__name__)
 SCORE_DIMS = [
     ("relevance_accuracy_score",    "Relevance & Accuracy"),
     ("plurality_breadth_score",     "Plurality & Breadth"),
-    ("coherence_conciseness_score", "Coherence & Conciseness"),
 ]
 
 DIM_KEYS = [d[0] for d in SCORE_DIMS]
@@ -335,7 +334,6 @@ def extract_interesting(
                 "reasoning": {
                     "relevance_accuracy": r.get("relevance_accuracy_reasoning", ""),
                     "plurality_breadth": r.get("plurality_breadth_reasoning", ""),
-                    "coherence_conciseness": r.get("coherence_conciseness_reasoning", ""),
                 },
             })
     return interesting
@@ -345,11 +343,51 @@ def extract_interesting(
 # Main builder
 # ---------------------------------------------------------------------------
 
+def embed_data_in_html(html_file: str, data: dict) -> None:
+    """
+    Replace the JSON inside the leaderboard.html sentinel block:
+        /* BEGIN_LEADERBOARD_DATA */ ... /* END_LEADERBOARD_DATA */
+    so the dashboard auto-loads when opened directly via file://.
+    """
+    path = Path(html_file)
+    if not path.exists():
+        logger.warning(
+            f"HTML file not found: {html_file}. "
+            "Skipping inline embedding. The dashboard will fall back to "
+            "fetch('leaderboard_data.json') when served via HTTP."
+        )
+        return
+
+    html = path.read_text(encoding="utf-8")
+    pattern = re.compile(
+        r"(/\*\s*BEGIN_LEADERBOARD_DATA\s*\*/)(.*?)(/\*\s*END_LEADERBOARD_DATA\s*\*/)",
+        re.DOTALL,
+    )
+    if not pattern.search(html):
+        logger.warning(
+            f"Could not find BEGIN_LEADERBOARD_DATA / END_LEADERBOARD_DATA "
+            f"sentinels in {html_file}. The HTML may be out of date — the "
+            f"dashboard will fall back to fetch('leaderboard_data.json')."
+        )
+        return
+
+    # Escape `</script>` so the embedded JSON cannot terminate the script tag.
+    payload = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+    new_html = pattern.sub(
+        lambda m: f"{m.group(1)}\n{payload}\n{m.group(3)}",
+        html,
+        count=1,
+    )
+    path.write_text(new_html, encoding="utf-8")
+    logger.info(f"Embedded leaderboard data into {html_file}")
+
+
 def build(
     input_files: list[str],
     output_file: str,
     metadata_file: str,
     max_interesting: int = 50,
+    html_file: Optional[str] = "leaderboard.html",
 ) -> None:
     logger.info(f"Loading model metadata from {metadata_file}")
     metadata = load_model_metadata(metadata_file)
@@ -444,6 +482,12 @@ def build(
 
     logger.info(f"Leaderboard data written to {output_file}")
 
+    # Embed the data inline in leaderboard.html so the dashboard auto-loads
+    # when the file is opened directly (file://). The fetch() fallback in the
+    # HTML still works for users serving the directory via HTTP.
+    if html_file:
+        embed_data_in_html(html_file, output)
+
 
 # ---------------------------------------------------------------------------
 # CLI
@@ -473,6 +517,15 @@ def main() -> None:
     parser.add_argument(
         "--max-interesting", type=int, default=50,
         help="Maximum interesting responses to keep per model. Default: 50",
+    )
+    parser.add_argument(
+        "--html", default="leaderboard.html",
+        help=(
+            "Dashboard HTML file. The build embeds the leaderboard data "
+            "inline between BEGIN_LEADERBOARD_DATA / END_LEADERBOARD_DATA "
+            "sentinels so the dashboard auto-loads when opened directly. "
+            "Pass an empty string to skip embedding. Default: leaderboard.html"
+        ),
     )
     parser.add_argument(
         "--log-level", default="INFO",
@@ -512,6 +565,7 @@ def main() -> None:
         output_file=args.output,
         metadata_file=args.metadata,
         max_interesting=args.max_interesting,
+        html_file=args.html or None,
     )
 
 
