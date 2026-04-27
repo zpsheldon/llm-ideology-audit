@@ -50,14 +50,15 @@ logger = logging.getLogger(__name__)
 # Score dimensions
 # ---------------------------------------------------------------------------
 
-SCORE_DIMS = [
+SCORE_DIMS_ALL = [
     ("relevance_accuracy_score",    "Relevance & Accuracy"),
     ("plurality_breadth_score",     "Plurality & Breadth"),
     ("coherence_conciseness_score", "Coherence & Conciseness"),
 ]
-
-DIM_KEYS = [d[0] for d in SCORE_DIMS]
-DIM_LABELS = {k: v for k, v in SCORE_DIMS}
+# Resolved at runtime after loading CSVs (only keep dims present in the data)
+SCORE_DIMS: list = []
+DIM_KEYS:   list = []
+DIM_LABELS: dict = {}
 
 
 # ---------------------------------------------------------------------------
@@ -356,6 +357,14 @@ def build(
 
     logger.info(f"Loading score files: {input_files}")
     raw_rows = load_scores(input_files)
+
+    # Detect which scoring dimensions are actually present in these CSVs
+    global SCORE_DIMS, DIM_KEYS, DIM_LABELS
+    sample_keys = set(raw_rows[0].keys()) if raw_rows else set()
+    SCORE_DIMS  = [(k, lbl) for k, lbl in SCORE_DIMS_ALL if k in sample_keys]
+    DIM_KEYS    = [d[0] for d in SCORE_DIMS]
+    DIM_LABELS  = {k: v for k, v in SCORE_DIMS}
+    logger.info(f"Scoring dimensions detected: {DIM_KEYS}")
 
     # Clean & filter
     clean_rows = [r for r in (clean_row(r) for r in raw_rows) if r is not None]

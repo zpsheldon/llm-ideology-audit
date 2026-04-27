@@ -57,7 +57,7 @@
       "color": "#065F46"
     },
     {
-      "model_id_pattern": "sarvam-m-30b",
+      "model_id_pattern": "sarvam-30b",
       "display_name": "Sarvam 30B",
       "provider": "Sarvam AI",
       "country_of_origin": "India",
@@ -65,7 +65,7 @@
       "color": "#7C3AED"
     },
     {
-      "model_id_pattern": "sarvam-m-105b",
+      "model_id_pattern": "sarvam-105b",
       "display_name": "Sarvam 105B",
       "provider": "Sarvam AI",
       "country_of_origin": "India",
@@ -129,12 +129,20 @@
       "color": "#1D4ED8"
     },
     {
+      "model_id_pattern": "gemini-3-flash-cot",
+      "display_name": "Gemini 3 Flash CoT",
+      "provider": "Google",
+      "country_of_origin": "USA",
+      "flag": "🇺🇸",
+      "color": "#16A34A"
+    },
+    {
       "model_id_pattern": "gemini-3-flash-thinking",
       "display_name": "Gemini 3 Flash Thinking",
       "provider": "Google",
       "country_of_origin": "USA",
       "flag": "🇺🇸",
-      "color": "#16A34A"
+      "color": "#0D9488"
     },
     {
       "model_id_pattern": "gemini-3-flash",
