@@ -502,7 +502,10 @@ def main() -> None:
         search_dirs = [Path("judge_results"), Path(".")]
         discovered = []
         for d in search_dirs:
-            discovered = sorted(d.glob("judge_scores_*.csv"))
+            discovered = sorted(
+                p for p in d.glob("judge_scores_*.csv")
+                if "test" not in p.stem.lower()
+            )
             if discovered:
                 logger.info(f"Auto-discovering score files from: {d}/")
                 break
