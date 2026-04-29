@@ -130,7 +130,7 @@
     },
     {
       "model_id_pattern": "gemini-3-flash-thinking",
-      "display_name": "Gemini 3 Flash Thinking",
+      "display_name": "Gemini 3 Flash (Thinking)",
       "provider": "Google",
       "country_of_origin": "USA",
       "flag": "🇺🇸",

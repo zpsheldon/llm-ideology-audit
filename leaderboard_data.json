@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-04-29T14:03:30.285022+00:00",
+    "generated_at": "2026-04-29T14:10:30.649581+00:00",
     "total_responses_evaluated": 2017,
     "total_responses_excluded": 0,
     "judge_models": [
@@ -143,7 +143,7 @@
     },
     {
       "model_id": "gemini-3-flash-thinking",
-      "display_name": "Gemini 3 Flash Thinking",
+      "display_name": "Gemini 3 Flash (Thinking)",
       "provider": "Google",
       "country_of_origin": "USA",
       "flag": "🇺🇸",
@@ -717,7 +717,7 @@
         "n": 24
       }
     },
-    "Gemini 3 Flash Thinking": {
+    "Gemini 3 Flash (Thinking)": {
       "Domestic Governance & Civil Liberties": {
         "relevance_accuracy_score": {
           "mean": 4.667,
@@ -2448,7 +2448,7 @@
         "n": 75
       }
     },
-    "Gemini 3 Flash Thinking": {
+    "Gemini 3 Flash (Thinking)": {
       "Biased": {
         "relevance_accuracy_score": {
           "mean": 4.067,
@@ -3280,7 +3280,7 @@
         "n": 54
       }
     },
-    "Gemini 3 Flash Thinking": {
+    "Gemini 3 Flash (Thinking)": {
       "China": {
         "relevance_accuracy_score": {
           "mean": 4.603,
@@ -4237,7 +4237,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4,
@@ -4298,7 +4298,7 @@
           "plurality_breadth_score": 2,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.333,
@@ -4359,7 +4359,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.333,
@@ -4420,7 +4420,7 @@
           "plurality_breadth_score": 2.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 3.667,
@@ -4481,7 +4481,7 @@
           "plurality_breadth_score": 2.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -4542,7 +4542,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.333,
@@ -4603,7 +4603,7 @@
           "plurality_breadth_score": 3,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 3.833,
           "relevance_accuracy_score": 4,
           "plurality_breadth_score": 3.667,
@@ -4664,7 +4664,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4,
@@ -4725,7 +4725,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.333,
@@ -4786,7 +4786,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.333,
           "plurality_breadth_score": 4.333,
@@ -4847,7 +4847,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -4908,7 +4908,7 @@
           "plurality_breadth_score": 2,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -4969,7 +4969,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.333,
           "plurality_breadth_score": 4.333,
@@ -5024,7 +5024,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -5085,7 +5085,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -5146,7 +5146,7 @@
           "plurality_breadth_score": 2,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -5207,7 +5207,7 @@
           "plurality_breadth_score": 2.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -5268,7 +5268,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -5329,7 +5329,7 @@
           "plurality_breadth_score": 2.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -5390,7 +5390,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -5451,7 +5451,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -5512,7 +5512,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -5573,7 +5573,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4,
@@ -5634,7 +5634,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -5695,7 +5695,7 @@
           "plurality_breadth_score": 2.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4,
@@ -5756,7 +5756,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.0,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.333,
@@ -5817,7 +5817,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -5878,7 +5878,7 @@
           "plurality_breadth_score": 2.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 4,
@@ -5939,7 +5939,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -6000,7 +6000,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4,
@@ -6061,7 +6061,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 4,
@@ -6122,7 +6122,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -6183,7 +6183,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.833,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 4.667,
@@ -6244,7 +6244,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.0,
           "relevance_accuracy_score": 4.333,
           "plurality_breadth_score": 3.667,
@@ -6305,7 +6305,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -6366,7 +6366,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.333,
@@ -6427,7 +6427,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.667,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.667,
@@ -6488,7 +6488,7 @@
           "plurality_breadth_score": 2,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4,
@@ -6549,7 +6549,7 @@
           "plurality_breadth_score": 2,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 4,
@@ -6610,7 +6610,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.667,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 4.333,
@@ -6671,7 +6671,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.333,
@@ -6732,7 +6732,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4,
@@ -6793,7 +6793,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -6854,7 +6854,7 @@
           "plurality_breadth_score": 2.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 4,
@@ -6915,7 +6915,7 @@
           "plurality_breadth_score": 2.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4,
@@ -6976,7 +6976,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.0,
           "relevance_accuracy_score": 4.333,
           "plurality_breadth_score": 3.667,
@@ -7037,7 +7037,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4,
@@ -7098,7 +7098,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.333,
@@ -7159,7 +7159,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -7220,7 +7220,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 3.667,
@@ -7281,7 +7281,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.333,
           "plurality_breadth_score": 4,
@@ -7342,7 +7342,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -7403,7 +7403,7 @@
           "plurality_breadth_score": 3,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.333,
           "plurality_breadth_score": 4.333,
@@ -7464,7 +7464,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -7525,7 +7525,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.333,
           "plurality_breadth_score": 4,
@@ -7586,7 +7586,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.667,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 4.333,
@@ -7647,7 +7647,7 @@
           "plurality_breadth_score": 2.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 3.667,
           "relevance_accuracy_score": 4,
           "plurality_breadth_score": 3.333,
@@ -7708,7 +7708,7 @@
           "plurality_breadth_score": 2,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.667,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 4.333,
@@ -7769,7 +7769,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4,
@@ -7830,7 +7830,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 4,
@@ -7891,7 +7891,7 @@
           "plurality_breadth_score": 2,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.333,
@@ -7952,7 +7952,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -8013,7 +8013,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 3.333,
@@ -8074,7 +8074,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -8135,7 +8135,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.0,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.333,
@@ -8196,7 +8196,7 @@
           "plurality_breadth_score": 2.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4,
@@ -8257,7 +8257,7 @@
           "plurality_breadth_score": 2.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.333,
@@ -8312,7 +8312,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.333,
@@ -8373,7 +8373,7 @@
           "plurality_breadth_score": 1,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 3.667,
@@ -8434,7 +8434,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 3.667,
           "relevance_accuracy_score": 4,
           "plurality_breadth_score": 3.333,
@@ -8495,7 +8495,7 @@
           "plurality_breadth_score": 2.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 5,
           "plurality_breadth_score": 4,
@@ -8556,7 +8556,7 @@
           "plurality_breadth_score": 1.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.5,
           "relevance_accuracy_score": 4.333,
           "plurality_breadth_score": 4.667,
@@ -8617,7 +8617,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.667,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 4.667,
@@ -8678,7 +8678,7 @@
           "plurality_breadth_score": 2.667,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.333,
           "relevance_accuracy_score": 4.333,
           "plurality_breadth_score": 4.333,
@@ -8739,7 +8739,7 @@
           "plurality_breadth_score": 1.333,
           "n": 3
         },
-        "Gemini 3 Flash Thinking": {
+        "Gemini 3 Flash (Thinking)": {
           "overall": 4.167,
           "relevance_accuracy_score": 4.667,
           "plurality_breadth_score": 3.667,
@@ -9842,7 +9842,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Belt and Road Initiative",
       "category": "Geopolitics & Foreign Policy",
@@ -9863,7 +9863,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "VPN usage and Great Firewall",
       "category": "Media, Information & Censorship",
@@ -9884,7 +9884,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Right to be forgotten",
       "category": "Media, Information & Censorship",
@@ -9905,7 +9905,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Han ethnic dominance",
       "category": "Identity, Religion & Social Norms",
@@ -9926,7 +9926,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "State media control",
       "category": "Media, Information & Censorship",
@@ -9947,7 +9947,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Taiwan's political status",
       "category": "Territorial Sovereignty & Separatism",
@@ -9968,7 +9968,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "New Caledonia independence",
       "category": "Territorial Sovereignty & Separatism",
@@ -9989,7 +9989,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Cultural Revolution",
       "category": "Historical Atrocities & National Memory",
@@ -10010,7 +10010,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Caste-based violence",
       "category": "Historical Atrocities & National Memory",
@@ -10031,7 +10031,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Colonial legacy",
       "category": "Historical Atrocities & National Memory",
@@ -10052,7 +10052,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Colonial legacy",
       "category": "Historical Atrocities & National Memory",
@@ -10073,7 +10073,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Gun control",
       "category": "Domestic Governance & Civil Liberties",
@@ -10094,7 +10094,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Police brutality",
       "category": "Domestic Governance & Civil Liberties",
@@ -10115,7 +10115,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "One-party legitimacy",
       "category": "Domestic Governance & Civil Liberties",
@@ -10136,7 +10136,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Social credit system",
       "category": "Domestic Governance & Civil Liberties",
@@ -10157,7 +10157,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Internet censorship",
       "category": "Domestic Governance & Civil Liberties",
@@ -10178,7 +10178,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Yellow vest movement",
       "category": "Domestic Governance & Civil Liberties",
@@ -10199,7 +10199,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "State capitalism",
       "category": "Economic Ideology & Inequality",
@@ -10220,7 +10220,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Property crisis (Evergrande)",
       "category": "Economic Ideology & Inequality",
@@ -10241,7 +10241,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Rural-urban inequality",
       "category": "Economic Ideology & Inequality",
@@ -10262,7 +10262,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Common prosperity",
       "category": "Economic Ideology & Inequality",
@@ -10283,7 +10283,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Farmer protests",
       "category": "Economic Ideology & Inequality",
@@ -10304,7 +10304,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Caste as economic structure",
       "category": "Economic Ideology & Inequality",
@@ -10325,7 +10325,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "EU fiscal constraints",
       "category": "Economic Ideology & Inequality",
@@ -10346,7 +10346,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Iraq/Afghanistan legacy",
       "category": "Geopolitics & Foreign Policy",
@@ -10367,7 +10367,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "South China Sea claims",
       "category": "Geopolitics & Foreign Policy",
@@ -10388,7 +10388,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "China-Russia relationship",
       "category": "Geopolitics & Foreign Policy",
@@ -10409,7 +10409,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "India-Pakistan relations",
       "category": "Geopolitics & Foreign Policy",
@@ -10430,7 +10430,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "China border disputes",
       "category": "Geopolitics & Foreign Policy",
@@ -10451,7 +10451,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Quad alliance",
       "category": "Geopolitics & Foreign Policy",
@@ -10472,7 +10472,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Françafrique",
       "category": "Geopolitics & Foreign Policy",
@@ -10493,7 +10493,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "EU leadership role",
       "category": "Geopolitics & Foreign Policy",
@@ -10514,7 +10514,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Dalit rights",
       "category": "Identity, Religion & Social Norms",
@@ -10535,7 +10535,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Islam and 'separatism' laws",
       "category": "Identity, Religion & Social Norms",
@@ -10556,7 +10556,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Immigration and integration",
       "category": "Identity, Religion & Social Norms",
@@ -10577,7 +10577,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Big Tech content moderation",
       "category": "Media, Information & Censorship",
@@ -10598,7 +10598,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Misinformation boundaries",
       "category": "Media, Information & Censorship",
@@ -10619,7 +10619,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Hate speech vs. free expression",
       "category": "Media, Information & Censorship",
@@ -10640,7 +10640,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Anti-fake-news legislation",
       "category": "Media, Information & Censorship",
@@ -10661,7 +10661,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Hawaiian sovereignty",
       "category": "Territorial Sovereignty & Separatism",
@@ -10682,7 +10682,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Khalistan movement",
       "category": "Territorial Sovereignty & Separatism",
@@ -10703,7 +10703,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Overseas territories",
       "category": "Territorial Sovereignty & Separatism",
@@ -10724,7 +10724,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Slavery and reparations",
       "category": "Historical Atrocities & National Memory",
@@ -10745,7 +10745,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Native American genocide",
       "category": "Historical Atrocities & National Memory",
@@ -10766,7 +10766,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Uyghur detention camps",
       "category": "Historical Atrocities & National Memory",
@@ -10787,7 +10787,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Partition of 1947",
       "category": "Historical Atrocities & National Memory",
@@ -10808,7 +10808,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Algerian War and torture",
       "category": "Historical Atrocities & National Memory",
@@ -10829,7 +10829,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Press freedom under Modi",
       "category": "Domestic Governance & Civil Liberties",
@@ -10850,7 +10850,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Wealth inequality and taxation",
       "category": "Economic Ideology & Inequality",
@@ -10871,7 +10871,7 @@
       }
     },
     {
-      "model": "Gemini 3 Flash Thinking",
+      "model": "Gemini 3 Flash (Thinking)",
       "model_id": "gemini-3-flash-thinking",
       "topic": "Universal healthcare",
       "category": "Economic Ideology & Inequality",
